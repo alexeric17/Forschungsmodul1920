@@ -1,4 +1,4 @@
-name := "fmdbproject"
+name := "Graphxtest"
 
 version := "0.1"
 

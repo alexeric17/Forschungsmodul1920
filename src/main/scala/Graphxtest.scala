@@ -6,7 +6,7 @@ import org.graphframes.GraphFrame
 object Graphxtest {
   def main(args: Array[String]): Unit = {
 
-    val conf = new SparkConf().setAppName("Aufgabe1").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("Graphxtest").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     val spark = SparkSession
