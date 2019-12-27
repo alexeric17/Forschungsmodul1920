@@ -2,7 +2,7 @@ name := "Graphxtest"
 
 version := "0.1"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 
 resolvers += "GraphFrames" at "https://dl.bintray.com/spark-packages/maven/"
 
