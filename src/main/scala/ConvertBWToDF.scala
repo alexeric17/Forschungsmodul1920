@@ -2,10 +2,10 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.{SparkConf, SparkContext}
 
-object ConvertBluewordsToGraphDataframe {
+object ConvertBWToDF {
 
   //set this to the home directory of this project
-  val FM1920HOME = "/home/schererc/Schreibtisch/WS1920/Forschungsmodul Datenbanken/forschungsmodul1920"
+  val FM1920HOME = ""
 
   def main(args: Array[String]): Unit = {
     //1. Initialize
