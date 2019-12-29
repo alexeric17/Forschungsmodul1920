@@ -6,7 +6,7 @@ scalaVersion := "2.11.12"
 
 resolvers += "GraphFrames" at "https://dl.bintray.com/spark-packages/maven/"
 
-val sparkVersion = "2.4.2"
+val sparkVersion = "2.4.4"
 
 libraryDependencies ++= Seq(
   "org.apache.spark" % "spark-core_2.11" % sparkVersion % Provided,
