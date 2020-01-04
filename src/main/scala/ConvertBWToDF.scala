@@ -39,7 +39,7 @@ object ConvertBWToDF {
       .drop("#BW")
       .drop("title")
       .withColumn("id", bluewordsDF("id").cast("int"))
-      .withColumnRenamed("id", "id1")
+      .withColumnRenamed("id", "src")
       .withColumn("blueword", explode(bluewordsDF("Blue Words")))
       .drop("Blue Words")
 
@@ -49,6 +49,8 @@ object ConvertBWToDF {
     val edgeDF = explodedBluewordsDF
       .withColumn("id2", convertBWToIdUdf(explodedBluewordsDF("blueword")))
       .drop("blueword")
+      .filter("id2 is not null")
+      .withColumnRenamed("id2", "dst")
 
     //6. Save the results to data-directory
     nodeDF.coalesce(1).write.json(FM1920HOME + "/data/nodes")

@@ -5,6 +5,8 @@ import org.graphframes.GraphFrame
 
 object Graphxtest {
   def main(args: Array[String]): Unit = {
+    //set this to the home directory of this project
+    val FM1920HOME = ""
 
     val conf = new SparkConf().setAppName("Graphxtest").setMaster("local[*]")
     val sc = new SparkContext(conf)
@@ -15,11 +17,9 @@ object Graphxtest {
       .enableHiveSupport()
       .getOrCreate()
 
-    val nodes = spark.createDataFrame(sc.parallelize(Array((3L, ("rxin", "student")), (7L, ("jgonzal", "postdoc")),
-      (5L, ("franklin", "prof")), (2L, ("istoica", "prof"))))).toDF("id", "information")
+    val nodes = spark.read.json(FM1920HOME + "/data/nodes/nodes.json")
 
-    val edges = spark.createDataFrame(sc.parallelize(Array(Edge(3L, 7L, "collab"), Edge(5L, 3L, "advisor"),
-      Edge(2L, 5L, "colleague"), Edge(5L, 7L, "pi")))).toDF("src", "dst", "information")
+    val edges = spark.read.json(FM1920HOME + "/data/edges/edge.json")
 
     val graph = GraphFrame(nodes, edges)
 
