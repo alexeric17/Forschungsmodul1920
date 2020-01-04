@@ -33,10 +33,10 @@ object degreeDF {
     //3. Create DataFrame for outEdges and inEdges
     //   OutEdges |ID|#outEdges|
     //   InEdges  |ID|#inEdges |
-    val outEdges = edgeDF.select("id1").groupBy("id1").count()
-      .withColumnRenamed("count", "outEdges").withColumnRenamed("id1", "id")
-    val inEdges= edgeDF.select("id2").groupBy("id2").count()
-      .withColumnRenamed("count", "inEdges").withColumnRenamed("id2","id")
+    val outEdges = edgeDF.select("src").groupBy("src").count()
+      .withColumnRenamed("count", "outEdges").withColumnRenamed("src", "id")
+    val inEdges= edgeDF.select("dst").groupBy("dst").count()
+      .withColumnRenamed("count", "inEdges").withColumnRenamed("dst","id")
 
     //4. Create a degreeDF with |ID|#inEdges|#outEdges|#totalEdge|
     //   Handle null values by setting them to 0. totalEdges = inEdges + outEdges
