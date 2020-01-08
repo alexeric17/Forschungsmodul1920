@@ -1,12 +1,10 @@
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.{SparkConf, SparkContext}
+import Util.FM1920HOME
 
 object ConvertBWToDF {
-
-  //set this to the home directory of this project
-  val FM1920HOME = ""
-
+  #
   def main(args: Array[String]): Unit = {
     //1. Initialize
     val conf = new SparkConf().setAppName("ConvertBluewordsToGraphDataframe").setMaster("local[*]")
