@@ -2,12 +2,10 @@ import org.apache.spark.graphx.lib.ShortestPaths
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
 import org.graphframes.GraphFrame
+import Util.FM1920HOME
 
 object Graphxtest {
   def main(args: Array[String]): Unit = {
-    //set this to the home directory of this project
-    val FM1920HOME = ""
-
     val conf = new SparkConf().setAppName("Graphxtest").setMaster("local[*]")
     val sc = new SparkContext(conf)
 

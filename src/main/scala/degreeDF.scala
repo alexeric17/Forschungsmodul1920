@@ -1,11 +1,9 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.{SparkConf, SparkContext}
+import Util.FM1920HOME
 
 object degreeDF {
-
-  //set this to the home directory of this project
-  val FM1920HOME = ""
 
   def main(args: Array[String]): Unit = {
 

@@ -2,7 +2,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object Util {
-
   //set this to the home directory of this project
   val FM1920HOME = ""
 
