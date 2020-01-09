@@ -1,3 +1,4 @@
+import org.apache.spark.graphx.lib.ShortestPaths
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
 import org.graphframes.GraphFrame
