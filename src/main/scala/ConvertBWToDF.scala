@@ -4,7 +4,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 import Util.FM1920HOME
 
 object ConvertBWToDF {
-  #
   def main(args: Array[String]): Unit = {
     //1. Initialize
     val conf = new SparkConf().setAppName("ConvertBluewordsToGraphDataframe").setMaster("local[*]")
