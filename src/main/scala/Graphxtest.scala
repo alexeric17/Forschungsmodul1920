@@ -1,27 +1,8 @@
-import org.apache.spark.graphx.lib.ShortestPaths
-import org.apache.spark.sql._
-import org.apache.spark.{SparkConf, SparkContext}
-import org.graphframes.GraphFrame
-import Util.FM1920HOME
+import Util._
 
 object Graphxtest {
   def main(args: Array[String]): Unit = {
-    val conf = new SparkConf().setAppName("Graphxtest").setMaster("local[*]")
-    val sc = new SparkContext(conf)
-
-    val spark = SparkSession
-      .builder()
-      .appName("Graphxtest")
-      .enableHiveSupport()
-      .getOrCreate()
-
-    val nodes = spark.read.json(FM1920HOME + "/data/nodes/nodes.json")
-
-    val edges = spark.read.json(FM1920HOME + "/data/edges/edge.json")
-
-    val graph = GraphFrame(nodes, edges)
-
-    val ranks = graph.pageRank.maxIter(1).run().vertices
+    val ranks = graphFrame.pageRank.maxIter(1).run().vertices
 
     ranks.collect().foreach(n => println(n))
   }

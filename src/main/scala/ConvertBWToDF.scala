@@ -1,37 +1,26 @@
-import org.apache.spark.sql._
+import Util._
 import org.apache.spark.sql.functions._
-import org.apache.spark.{SparkConf, SparkContext}
-import Util.FM1920HOME
 
 object ConvertBWToDF {
   def main(args: Array[String]): Unit = {
-    //1. Initialize
-    val conf = new SparkConf().setAppName("ConvertBluewordsToGraphDataframe").setMaster("local[*]")
-    val sc = new SparkContext(conf)
 
-    val spark = SparkSession
-      .builder()
-      .appName("ConvertBluewordsToGraphDataframe")
-      .enableHiveSupport()
-      .getOrCreate()
-
-    //2. Read data which was created by bluewordsextraction-project - MAKE SURE THAT THE FILE EXISTS
+    //1. Read data which was created by bluewordsextraction-project - MAKE SURE THAT THE FILE EXISTS
     val bluewordsDF = spark.read.json(FM1920HOME + "/data/bluewords.json")
 
-    //3. Create node dataframe by dropping and renaming some columns
+    //2. Create node dataframe by dropping and renaming some columns
     val nodeDF = bluewordsDF
       .drop("Blue Words")
       .drop("#BW")
       .withColumn("id", bluewordsDF("id").cast("int"))
 
-    //4. Create map which maps titles to their respective ids
+    //3. Create map which maps titles to their respective ids
     val titleToId = nodeDF
       .rdd
       .map(e => (e.getString(1).toLowerCase, e.getInt(0)))
       .collectAsMap()
 
 
-    //5. Create Edge Dataframe by translating every blueword to its matching id
+    //4. Create Edge Dataframe by translating every blueword to its matching id
     val explodedBluewordsDF = bluewordsDF
       .drop("#BW")
       .drop("title")
@@ -49,8 +38,8 @@ object ConvertBWToDF {
       .filter("id2 is not null")
       .withColumnRenamed("id2", "dst")
 
-    //6. Save the results to data-directory
-    nodeDF.coalesce(1).write.json(FM1920HOME + "/data/nodes")
-    edgeDF.coalesce(1).write.json(FM1920HOME + "/data/edges")
+    //5. Save the results to data-directory
+    nodeDF.coalesce(1).write.json(nodeDir)
+    edgeDF.coalesce(1).write.json(edgeDir)
   }
 }
