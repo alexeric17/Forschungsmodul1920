@@ -6,6 +6,7 @@ import Util.FM1920HOME
 
 
 object GraphxShortestPath {
+  val SOURCE_ID = 1 //change this for your usecase
 
   def main(args: Array[String]): Unit = {
 
@@ -76,7 +77,7 @@ object GraphxShortestPath {
       val result = ShortestPaths.run(graph, Seq(3, 2)) //Shortest path from all vertices to vertices.
       val shortestPath = result
         .vertices
-        .filter({ case (id, _) => id == 4 })
+        .filter({ case (id, _) => id == SOURCE_ID })
         .first()
         ._2
         .get(3)
@@ -89,7 +90,7 @@ object GraphxShortestPath {
     }
 
     //5.   Singel source shortest path using Pregel
-    val sourceId: VertexId = 4
+    val sourceId: VertexId = SOURCE_ID
 
     //    5.1 Single source shortest path (SSSP) using pregel.
     //    Init graph. All vertices except 'root' have distance infinity.
