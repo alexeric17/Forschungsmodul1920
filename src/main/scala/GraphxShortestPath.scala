@@ -57,7 +57,7 @@ object GraphxShortestPath {
     //    For each pair (src,dst) in edgeDF, create edge with weight 1. Using graphx Edge function: Edge(srcId,dstId,attr)
     val edges = spark.read.json(edgeFile).mapPartitions(edgesRow => {
       edgesRow.map(edgeRow => {
-        Edge(edgeRow.getAs[Long]("srcId"), edgeRow.getAs[Long]("dstId"), 1.0)
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
       })
     }).rdd
     //    EdgeRDD used in Graphx-graph constructor.
