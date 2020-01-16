@@ -26,12 +26,12 @@ object GraphxShortestPath {
     val useShortestPath = 0
     if (useShortestPath == 1) {
       println("Shortestpath from 4 to node 3")
-      shortest_path_graphx(Seq(3, 2), SOURCE_ID).foreach(println)
+      shortest_path_graphx(graph, List(3, 2), SOURCE_ID).foreach(println)
     }
 
     //2. Single source shortest path using Pregel
     val sourceId: VertexId = SOURCE_ID
-    println(shortest_path_pregel(SOURCE_ID).mkString("\n"))
+    println(shortest_path_pregel(graph, SOURCE_ID).mkString("\n"))
   }
 
 }

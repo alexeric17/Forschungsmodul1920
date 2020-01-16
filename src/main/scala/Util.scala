@@ -48,38 +48,55 @@ object Util {
       .collectAsMap()
   }
 
-  def get_subgraph(nodes: DataFrame, edges: DataFrame, ids: List[Long]): Unit = {
-    val timestamp = System.currentTimeMillis().toString
+  def get_subgraph(nodes: DataFrame, edges: DataFrame, ids: List[Long]): Graph[String, Double] = {
     nodes
       .filter(entry => ids.contains(entry.getLong(0)))
       .distinct()
-      .coalesce(1)
-      .write
-      .json(FM1920HOME + "/data/subgraph_nodes/" + timestamp)
 
     edges
       .filter(entry => ids.contains(entry.getLong(0)) && ids.contains(entry.getLong(1)))
       .distinct()
-      .coalesce(1)
-      .write
-      .json(FM1920HOME + "/data/subgraph_edges/" + timestamp)
+
+    val nodesRDD = nodes.mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+
+    val edgesRDD = edges.mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+    Graph(nodesRDD, edgesRDD)
   }
 
-  def get_subgraph(nodes: DataFrame, edges: DataFrame, min: Int, max: Int): Unit = {
+  def get_subgraphframe(nodes: DataFrame, edges: DataFrame, ids: List[Long]): GraphFrame = {
+    nodes
+      .filter(entry => ids.contains(entry.getLong(0)))
+      .distinct()
+
+    edges
+      .filter(entry => ids.contains(entry.getLong(0)) && ids.contains(entry.getLong(1)))
+      .distinct()
+
+    GraphFrame(nodes, edges)
+  }
+
+  def get_subgraph(nodes: DataFrame, edges: DataFrame, min: Int, max: Int): Graph[String, Double] = {
+    val list = List
+      .range(min, max + 1, 1)
+      .map(_.toLong)
+    get_subgraph(nodes, edges, list)
+  }
+
+  def get_subgraphframe(nodes: DataFrame, edges: DataFrame, min: Int, max: Int): GraphFrame = {
     val list = List
       .range(min, max + 1, 1)
       .map(_.toLong)
 
-    get_subgraph(nodes, edges, list)
+    get_subgraphframe(nodes, edges, list)
   }
 
-  def get_subgraph(nodes: DataFrame, edges: DataFrame, nr: Int, take_highest: Boolean): Unit = {
-    val spark = SparkSession
-      .builder()
-      .appName("get_subgraph")
-      .enableHiveSupport()
-      .getOrCreate()
-
+  def get_subgraph(nodes: DataFrame, edges: DataFrame, nr: Int, take_highest: Boolean): Graph[String, Double] = {
     val degreeDF = spark.read.json(FM1920HOME + "/data/degree/degrees.json")
 
     val list = if (take_highest) {
@@ -100,7 +117,39 @@ object Util {
     get_subgraph(nodes, edges, filtered_string_list.map(s => s.toLong))
   }
 
-  def shortest_path_graphx(landmarks: Seq[VertexId], src_id: Int): Option[Int] = {
+  def get_subgraphframe(nodes: DataFrame, edges: DataFrame, nr: Int, take_highest: Boolean): GraphFrame = {
+    val degreeDF = spark.read.json(FM1920HOME + "/data/degree/degrees.json")
+
+    val list = if (take_highest) {
+      degreeDF
+        .orderBy(desc("outEdges"))
+        .select("id")
+        .take(nr)
+        .toList
+    } else {
+      degreeDF
+        .orderBy(asc("outEdges"))
+        .select("id")
+        .take(nr)
+        .toList
+    }
+    val string_list = list.map(r => r.toString())
+    val filtered_string_list = string_list.map(s => s.substring(1, s.length - 1))
+    get_subgraphframe(nodes, edges, filtered_string_list.map(s => s.toLong))
+  }
+
+  def write_nodes_and_edges_to_disk(nodes: DataFrame, edges: DataFrame): Unit = {
+    val timestamp = System.currentTimeMillis().toString
+    nodes.coalesce(1)
+      .write
+      .json(FM1920HOME + "/data/subgraph_nodes/" + timestamp)
+
+    edges.coalesce(1)
+      .write
+      .json(FM1920HOME + "/data/subgraph_edges/" + timestamp)
+  }
+
+  def shortest_path_graphx(graph: Graph[String, Double], landmarks: List[VertexId], src_id: Int): Option[Int] = {
     val result = ShortestPaths.run(graph, landmarks) //Shortest path from all vertices to vertices.
     val shortestPaths = result
       .vertices
@@ -113,7 +162,7 @@ object Util {
   }
 
   //SSSP but with a list with actual path. If list is empty no path found. Finds the actual path from all nodes to src_id.
-  def shortest_path_pregel(src_id: Int): Array[(VertexId, (Double, List[VertexId]))] = {
+  def shortest_path_pregel(graph: Graph[String, Double], src_id: Int): Array[(VertexId, (Double, List[VertexId]))] = {
     val initialGraph1: Graph[(Double, List[VertexId]), Double] =
     //Init graph. All vertices except 'root' have distance infinity. All vertices except 'root' have empty list. Root has itself in list.
       graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
