@@ -18,6 +18,8 @@ object Util {
     .enableHiveSupport()
     .getOrCreate()
 
+  import spark.implicits._ //needed to avoid defining implicit encoders when serializing data to rdd
+
   //For GraphX
   //    nodeFile should have format |id|title|
   //    edgeFile should have format |src|dst|
