@@ -3,6 +3,9 @@ import org.apache.spark.graphx.{Edge, EdgeDirection, Graph, VertexId}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
+import org.graphframes.lib.ConnectedComponents
+
+import scala.collection.Map
 
 object Util {
   //set these to the correct paths and names for your project
@@ -161,7 +164,7 @@ object Util {
     shortestPaths
   }
 
-  //SSSP but with a list with actual path. If list is empty no path found. Finds the actual path from all nodes to src_id.
+  //SSSP but with a list of actual path. If list is empty no path found. Finds the actual path from all nodes to src_id.
   def shortest_path_pregel(graph: Graph[String, Double], src_id: Int): Array[(VertexId, (Double, List[VertexId]))] = {
     val initialGraph1: Graph[(Double, List[VertexId]), Double] =
     //Init graph. All vertices except 'root' have distance infinity. All vertices except 'root' have empty list. Root has itself in list.
@@ -181,5 +184,83 @@ object Util {
 
     sssp1.vertices.collect
     //TODO Use filter to select specific path between two nodes.
+  }
+
+  def most_seen_vertex_sssp_pregel(graph: Graph[String, Double], src_id: Int): Unit = {
+
+    //1. Calculate shortestpath to src given the graph G. sssp will be a collection of all vertices.
+    val sssp = shortest_path_pregel(graph, src_id)
+
+    //2. Convert from Array to Map.
+    val allVertex = sssp.toMap.flatMap(x => x._2._2)
+
+    //4. (K,V) Calculate how many times we have seen each vertex.
+    val dictnodesSeen = allVertex.groupBy(x => x).mapValues(_.size)
+
+    //5. Most seen node(s)
+    val mostSeenNode = dictnodesSeen.maxBy(x => x._2)
+
+  }
+  def scc_graphx(graph: Graph[String, Double], Iter : Int): Unit ={
+    // iter = number of iterations
+    val scc = graph.stronglyConnectedComponents(Iter)
+    scc.vertices.collect.toMap
+  }
+
+  def cc_graphx(graph: Graph[String, Double]): Unit ={
+    //1. Connected components
+    val cc = graph.connectedComponents()
+
+    //2. Get each subGraph as a list.
+    val ccVertices = cc.vertices.collect().toMap
+    val subGraphs = ccVertices.groupBy(_._2).mapValues(_.map(_._1))
+    //3. Get size of each subGraph and number of subgraphs
+    val numberOfSubGraphs = cc.vertices.values.distinct.count
+    val subGraphSizes = subGraphs.map(x => (x._1, x._2.size))
+
+  }
+  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] =
+  {
+    //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
+    val cc = graph.connectedComponents()
+    val ccVertices = cc.vertices.collect().toMap
+    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
+
+    subGraphs
+  }
+
+
+  def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] ={
+    //Paramters original graph and subGraph
+
+    //1. Get List of all vertex ids.
+    val subGraphVertexIds = subGraphItr.toList
+
+    //2. Get Vertices, filter so that we only take a vertex where Id exist in subgraph.
+    val newGraphVertices = graph.vertices.filter{
+      case (id,title) => subGraphVertexIds.contains(id)
+      case _ => false
+    }
+
+    //3. Get edges, filter so that we only take an edge where srcId AND dstId exist in subgraph.
+    val newGraphEdges = graph.edges.filter{
+      case Edge(srcId, dstId, _) => subGraphVertexIds.contains(srcId) && subGraphVertexIds.contains(dstId)
+      case _ => false
+    }
+    //4. Create subGraph
+    val subGraph = Graph(newGraphVertices,newGraphEdges)
+
+    subGraph
+  }
+
+  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
+
+    //1. Create array which can hold each subgraph.
+    val allGraphs : Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
+    //2. Create a loop depending on # of subGraphs
+    for(i <- 0 until Itr){
+      allGraphs(i) = create_subgraph_from_cc(graph,subGraphs(i))
+    }
+    allGraphs
   }
 }
