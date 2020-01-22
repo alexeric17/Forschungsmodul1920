@@ -35,7 +35,7 @@ object RuntimeTest {
     start = System.nanoTime()
     shortest_path_graphx(graph_25k, List(source_id), source_id)
     end = System.nanoTime()
-    println(s"10K, graphx: ${(end - start) / 1000 / 1000} ms")
+    println(s"25k, graphx: ${(end - start) / 1000 / 1000} ms")
 
     start = System.nanoTime()
     shortest_path_pregel(graph_25k, source_id)
