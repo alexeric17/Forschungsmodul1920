@@ -257,7 +257,7 @@ object Util {
     subGraph
   }
 
-  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
+  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[scala.collection.immutable.Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
 
     //1. Create array which can hold each subgraph.
     val allGraphs : Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
