@@ -3,9 +3,6 @@ import org.apache.spark.graphx.{Edge, EdgeDirection, Graph, VertexId}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
-import org.graphframes.lib.ConnectedComponents
-
-import scala.collection.Map
 
 object Util {
   //set these to the correct paths and names for your project
@@ -52,19 +49,19 @@ object Util {
   }
 
   def get_subgraph(nodes: DataFrame, edges: DataFrame, ids: List[Long]): Graph[String, Double] = {
-    nodes
+    val filtered_nodes = nodes
       .filter(entry => ids.contains(entry.getLong(0)))
       .distinct()
 
-    edges
+    val filtered_edges = edges
       .filter(entry => ids.contains(entry.getLong(0)) && ids.contains(entry.getLong(1)))
       .distinct()
 
-    val nodesRDD = nodes.mapPartitions(vertices => {
+    val nodesRDD = filtered_nodes.mapPartitions(vertices => {
       vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
     }).rdd
 
-    val edgesRDD = edges.mapPartitions(edgesRow => {
+    val edgesRDD = filtered_edges.mapPartitions(edgesRow => {
       edgesRow.map(edgeRow => {
         Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
       })
@@ -73,15 +70,15 @@ object Util {
   }
 
   def get_subgraphframe(nodes: DataFrame, edges: DataFrame, ids: List[Long]): GraphFrame = {
-    nodes
+    val filtered_nodes = nodes
       .filter(entry => ids.contains(entry.getLong(0)))
       .distinct()
 
-    edges
+    val filtered_edges = edges
       .filter(entry => ids.contains(entry.getLong(0)) && ids.contains(entry.getLong(1)))
       .distinct()
 
-    GraphFrame(nodes, edges)
+    GraphFrame(filtered_edges, filtered_edges)
   }
 
   def get_subgraph(nodes: DataFrame, edges: DataFrame, min: Int, max: Int): Graph[String, Double] = {
