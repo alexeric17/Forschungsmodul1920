@@ -224,9 +224,13 @@ object Util {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
     val cc = graph.connectedComponents()
     val ccVertices = cc.vertices.collect().toMap
-    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
+    val stage1 = ccVertices.groupBy(_._2)
+    val stage2 = stage1.mapValues(_.map(_._1))
+    val stage3 = stage2.values
+    val stage4 = stage3.toArray
+    //val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
 
-    subGraphs
+    stage4
   }
 
 
@@ -259,6 +263,7 @@ object Util {
     val allGraphs : Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
     //2. Create a loop depending on # of subGraphs
     for(i <- 0 until Itr){
+      println(s"Iteration: $i")
       allGraphs(i) = create_subgraph_from_cc(graph,subGraphs(i))
     }
     allGraphs
