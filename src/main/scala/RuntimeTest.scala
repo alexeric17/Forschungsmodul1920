@@ -14,18 +14,18 @@ object RuntimeTest {
       val source_id = component.vertices.collect().take(1)(0)._1
       var start = System.nanoTime()
       shortest_path_graphx(component, List(source_id), source_id.toInt)
-      var runtime = System.nanoTime() - start
-      println("Adding " + runtime + " to graphx")
-      runtime_graphx = runtime.toInt
+      var runtime = (System.nanoTime() - start) / 1000 / 1000
+      println("Adding " + runtime + " ms to graphx")
+      runtime_graphx += runtime.toFloat
 
       start = System.nanoTime()
       shortest_path_pregel(component, source_id.toInt)
-      runtime = System.nanoTime() - start
+      runtime = (System.nanoTime() - start) / 1000 / 1000
       println("Adding " + runtime + " to pregel")
-      runtime_pregel += (System.nanoTime() - start).toInt
+      runtime_pregel += runtime.toFloat
     }
-    println(s"$size, graphx: ${runtime_graphx / 1000 / 1000} ms")
-    println(s"$size, pregel: ${runtime_pregel / 1000 / 1000} ms")
+    println(s"$size, graphx: $runtime_graphx ms")
+    println(s"$size, pregel: $runtime_pregel ms")
   }
 
   def main(args: Array[String]): Unit = {
