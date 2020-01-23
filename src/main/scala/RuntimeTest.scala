@@ -29,17 +29,17 @@ object RuntimeTest {
     val components_5k = subgraphs_from_connected_components(graph_5k)
     val subgraphs_5k = create_all_subgraphs_from_cc(graph_5k, components_5k, components_5k.length)
 
-    val graph_10k = get_subgraph(nodesDF, edgeDF, 10000, take_highest = true)
-    val components_10k = subgraphs_from_connected_components(graph_10k)
-    val subgraphs_10k = create_all_subgraphs_from_cc(graph_10k, components_5k, components_5k.length)
-
-    val graph_25k = get_subgraph(nodesDF, edgeDF, 25000, take_highest = true)
-    val components_25k = subgraphs_from_connected_components(graph_25k)
-    val subgraphs_25k = create_all_subgraphs_from_cc(graph_25k, components_5k, components_5k.length)
-
-    val graph_50k = get_subgraph(nodesDF, edgeDF, 50000, take_highest = true)
-    val components_50k = subgraphs_from_connected_components(graph_50k)
-    val subgraphs_50k = create_all_subgraphs_from_cc(graph_50k, components_5k, components_5k.length)
+//    val graph_10k = get_subgraph(nodesDF, edgeDF, 10000, take_highest = true)
+//    val components_10k = subgraphs_from_connected_components(graph_10k)
+//    val subgraphs_10k = create_all_subgraphs_from_cc(graph_10k, components_5k, components_5k.length)
+//
+//    val graph_25k = get_subgraph(nodesDF, edgeDF, 25000, take_highest = true)
+//    val components_25k = subgraphs_from_connected_components(graph_25k)
+//    val subgraphs_25k = create_all_subgraphs_from_cc(graph_25k, components_5k, components_5k.length)
+//
+//    val graph_50k = get_subgraph(nodesDF, edgeDF, 50000, take_highest = true)
+//    val components_50k = subgraphs_from_connected_components(graph_50k)
+//    val subgraphs_50k = create_all_subgraphs_from_cc(graph_50k, components_5k, components_5k.length)
 
     compute_runtime("5K", subgraphs_5k)
 
