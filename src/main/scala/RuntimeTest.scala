@@ -4,7 +4,7 @@ object RuntimeTest {
   def main(args: Array[String]): Unit = {
     val graph_5k = get_subgraph(nodesDF, edgeDF, 5000, take_highest = true)
     val components_5k = subgraphs_from_connected_components(graph_5k)
-    val subgraphs_5k = create_all_subgraphs_from_cc(graph, components_5k, components_5k.length)
+    val subgraphs_5k = create_all_subgraphs_from_cc(graph_5k, components_5k, components_5k.length)
     println(s"5K: #Components: ${subgraphs_5k.length}")
 
     //    val graph_10k = get_subgraph(nodesDF, edgeDF, 10000, take_highest = true)
