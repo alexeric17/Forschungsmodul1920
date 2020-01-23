@@ -9,7 +9,7 @@ object RuntimeTest {
     var runtime_graphx = 0
     var runtime_pregel = 0
     for (i <- 0 until 10) {
-      val component = sorted_components(i)
+      val component = sorted_components(sorted_components.length - 1 - i)
       println(s"Size of component $i: ${component.vertices.collect().length}")
       val source_id = component.vertices.collect().take(1)(0)._1
       var start = System.nanoTime()
