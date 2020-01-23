@@ -219,18 +219,14 @@ object Util {
     val subGraphSizes = subGraphs.map(x => (x._1, x._2.size))
 
   }
-  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[scala.collection.immutable.Iterable[VertexId]] =
+  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] =
   {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
     val cc = graph.connectedComponents()
     val ccVertices = cc.vertices.collect().toMap
-    val stage1 = ccVertices.groupBy(_._2)
-    val stage2 = stage1.mapValues(_.map(_._1))
-    val stage3 = stage2.values
-    val stage4 = stage3.toArray
-    //val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
+    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
 
-    stage4
+    subGraphs
   }
 
 
@@ -257,7 +253,7 @@ object Util {
     subGraph
   }
 
-  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[scala.collection.immutable.Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
+  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
 
     //1. Create array which can hold each subgraph.
     val allGraphs : Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
