@@ -219,7 +219,7 @@ object Util {
     val subGraphSizes = subGraphs.map(x => (x._1, x._2.size))
 
   }
-  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] =
+  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[scala.collection.immutable.Iterable[VertexId]] =
   {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
     val cc = graph.connectedComponents()
