@@ -1,11 +1,14 @@
 import Util._
-import org.apache.spark.graphx.Graph
 
 object RuntimeTest {
 
-  def compute_runtime(size: String, components: Array[Graph[String, Double]]): Unit = {
-    println(s"$size: #Components: ${components.length}")
-    val sorted_components = components.sortBy(g => -g.vertices.collect().length)
+  def compute_runtime(size: Int): Unit = {
+    val graph = get_subgraph(nodesDF, edgeDF, size, take_highest = true)
+    val components = subgraphs_from_connected_components(graph)
+    val subgraphs = create_all_subgraphs_from_cc(graph, components, components.length)
+
+    println(s"${size / 1000}K: #Components: ${components.length}")
+    val sorted_components = subgraphs.sortBy(g => -g.vertices.collect().length)
     var runtime_graphx = 0.0
     var runtime_pregel = 0.0
     for (i <- 0 until 10) {
@@ -31,29 +34,10 @@ object RuntimeTest {
   }
 
   def main(args: Array[String]): Unit = {
-    val graph_5k = get_subgraph(nodesDF, edgeDF, 5000, take_highest = true)
-    val components_5k = subgraphs_from_connected_components(graph_5k)
-    val subgraphs_5k = create_all_subgraphs_from_cc(graph_5k, components_5k, components_5k.length)
-
-    val graph_10k = get_subgraph(nodesDF, edgeDF, 10000, take_highest = true)
-    val components_10k = subgraphs_from_connected_components(graph_10k)
-    val subgraphs_10k = create_all_subgraphs_from_cc(graph_10k, components_10k, components_10k.length)
-
-    val graph_25k = get_subgraph(nodesDF, edgeDF, 25000, take_highest = true)
-    val components_25k = subgraphs_from_connected_components(graph_25k)
-    val subgraphs_25k = create_all_subgraphs_from_cc(graph_25k, components_25k, components_25k.length)
-
-    val graph_50k = get_subgraph(nodesDF, edgeDF, 50000, take_highest = true)
-    val components_50k = subgraphs_from_connected_components(graph_50k)
-    val subgraphs_50k = create_all_subgraphs_from_cc(graph_50k, components_50k, components_50k.length)
-
-    val components_full = subgraphs_from_connected_components(graph)
-    val subgraphs_full = create_all_subgraphs_from_cc(graph, components_full, components_full.length)
-
-    compute_runtime("5K", subgraphs_5k)
-    compute_runtime("10K", subgraphs_10k)
-    compute_runtime("25K", subgraphs_25k)
-    compute_runtime("50K", subgraphs_50k)
-    compute_runtime("FULL", subgraphs_full)
+    compute_runtime(5000)
+    compute_runtime(10000)
+    compute_runtime(250000)
+    compute_runtime(50000)
+    compute_runtime(150000)
   }
 }
