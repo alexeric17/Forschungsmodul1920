@@ -6,8 +6,8 @@ object RuntimeTest {
   def compute_runtime(size: String, components: Array[Graph[String, Double]]): Unit = {
     println(s"$size: #Components: ${components.length}")
     val sorted_components = components.sortBy(g => g.vertices.collect().length)
-    var runtime_graphx = 0
-    var runtime_pregel = 0
+    var runtime_graphx = 0.0
+    var runtime_pregel = 0.0
     for (i <- 0 until 10) {
       val component = sorted_components(sorted_components.length - 1 - i)
       println(s"Size of component $i: ${component.vertices.collect().length}")
