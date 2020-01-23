@@ -12,11 +12,11 @@ object RuntimeTest {
       val source_id = component.vertices.collect().take(1)(0)._1
       var start = System.nanoTime()
       shortest_path_graphx(component, List(source_id), source_id.toInt)
-      runtime_graphx += (System.nanoTime() - start)
+      runtime_graphx += (System.nanoTime() - start).toInt
 
       start = System.nanoTime()
       shortest_path_pregel(component, source_id.toInt)
-      runtime_pregel += (System.nanoTime() - start)
+      runtime_pregel += (System.nanoTime() - start).toInt
     }
     println(s"5K, graphx: ${runtime_graphx / 1000 / 1000} ms")
     println(s"5K, pregel: ${runtime_pregel / 1000 / 1000} ms")
