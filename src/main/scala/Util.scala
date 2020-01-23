@@ -6,7 +6,7 @@ import org.graphframes.GraphFrame
 
 object Util {
   //set these to the correct paths and names for your project
-  val FM1920HOME = ""
+  val FM1920HOME = "/home/schererc/Schreibtisch/WS1920/Forschungsmodul Datenbanken/forschungsmodul1920"
   val nodeDir = FM1920HOME + "/data/nodes"
   val edgeDir = FM1920HOME + "/data/edges"
   val nodeFile = nodeDir + "/nodes.json"
