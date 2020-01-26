@@ -52,19 +52,19 @@ object Util {
   }
 
   def get_subgraph(nodes: DataFrame, edges: DataFrame, ids: List[Long]): Graph[String, Double] = {
-    nodes
+    val filtered_nodes = nodes
       .filter(entry => ids.contains(entry.getLong(0)))
       .distinct()
 
-    edges
+    val filtered_edges = edges
       .filter(entry => ids.contains(entry.getLong(0)) && ids.contains(entry.getLong(1)))
       .distinct()
 
-    val nodesRDD = nodes.mapPartitions(vertices => {
+    val nodesRDD = filtered_nodes.mapPartitions(vertices => {
       vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
     }).rdd
 
-    val edgesRDD = edges.mapPartitions(edgesRow => {
+    val edgesRDD = filtered_edges.mapPartitions(edgesRow => {
       edgesRow.map(edgeRow => {
         Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
       })
@@ -262,5 +262,22 @@ object Util {
       allGraphs(i) = create_subgraph_from_cc(graph,subGraphs(i))
     }
     allGraphs
+  }
+
+
+  def filter_users_from_nodes(nodes : DataFrame): Unit ={
+    //Specificy where to save file.
+    val articles = nodes.filter(!col("title").startsWith("User")) //All nodes but NOT users
+    //articles.coalesce(1).write.json(nodeDir)
+  }
+
+  def filter_users_from_edges(nodes : DataFrame, edge : DataFrame): Unit ={
+
+    val users = nodes.filter(col("title").startsWith("User"))
+    val usersList = users.select("id").collect().map(_(0)).toList
+    println("usersList: " + usersList)
+
+    val newEdges = edge.filter((!($"src".isin(usersList:_*))) || (!($"dst".isin(usersList:_*))))
+    newEdges.show()
   }
 }
