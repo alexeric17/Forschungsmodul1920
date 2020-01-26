@@ -52,11 +52,11 @@ object Util {
   }
 
   def get_subgraph(nodes: DataFrame, edges: DataFrame, ids: List[Long]): Graph[String, Double] = {
-    nodes
+    val node = nodes
       .filter(entry => ids.contains(entry.getLong(0)))
       .distinct()
 
-    edges
+    val edge = edges
       .filter(entry => ids.contains(entry.getLong(0)) && ids.contains(entry.getLong(1)))
       .distinct()
 
@@ -69,6 +69,7 @@ object Util {
         Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
       })
     }).rdd
+
     Graph(nodesRDD, edgesRDD)
   }
 
@@ -172,7 +173,6 @@ object Util {
 
     val sssp1 = initialGraph1.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
       (id, dist, newDist) => if (dist._1 < newDist._1) dist else newDist,
-
       triplet => { //send msg
         if (triplet.srcAttr._1 < triplet.dstAttr._1 - triplet.attr) {
           Iterator((triplet.dstId, (triplet.srcAttr._1 + triplet.attr, triplet.srcAttr._2 :+ triplet.dstId)))
@@ -201,6 +201,7 @@ object Util {
     val mostSeenNode = dictnodesSeen.maxBy(x => x._2)
 
   }
+
   def scc_graphx(graph: Graph[String, Double], Iter : Int): Unit ={
     // iter = number of iterations
     val scc = graph.stronglyConnectedComponents(Iter)
@@ -218,6 +219,9 @@ object Util {
     val numberOfSubGraphs = cc.vertices.values.distinct.count
     val subGraphSizes = subGraphs.map(x => (x._1, x._2.size))
 
+    println("number of subgraphs: " + numberOfSubGraphs)
+    println("sub graph Sizes: " + subGraphSizes)
+
   }
   def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] =
   {
@@ -225,10 +229,11 @@ object Util {
     val cc = graph.connectedComponents()
     val ccVertices = cc.vertices.collect().toMap
     val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
+    println("in subgraph_from_connected_components: " + subGraphs(0))
+    println("in subgraph_from_connected_components: " + subGraphs(1))
 
     subGraphs
   }
-
 
   def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] ={
     //Paramters original graph and subGraph
@@ -255,6 +260,8 @@ object Util {
 
   def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
 
+    val sizeofArr = subGraphs.length
+    println("sizeofArr is: " + sizeofArr)
     //1. Create array which can hold each subgraph.
     val allGraphs : Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
     //2. Create a loop depending on # of subGraphs
