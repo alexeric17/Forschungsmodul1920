@@ -3,9 +3,6 @@ import org.apache.spark.graphx.{Edge, EdgeDirection, Graph, VertexId}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
-import org.graphframes.lib.ConnectedComponents
-
-import scala.collection.Map
 
 object Util {
   //set these to the correct paths and names for your project
@@ -201,13 +198,14 @@ object Util {
     val mostSeenNode = dictnodesSeen.maxBy(x => x._2)
 
   }
-  def scc_graphx(graph: Graph[String, Double], Iter : Int): Unit ={
+
+  def scc_graphx(graph: Graph[String, Double], Iter: Int): Unit = {
     // iter = number of iterations
     val scc = graph.stronglyConnectedComponents(Iter)
     scc.vertices.collect.toMap
   }
 
-  def cc_graphx(graph: Graph[String, Double]): Unit ={
+  def cc_graphx(graph: Graph[String, Double]): Unit = {
     //1. Connected components
     val cc = graph.connectedComponents()
 
@@ -219,56 +217,57 @@ object Util {
     val subGraphSizes = subGraphs.map(x => (x._1, x._2.size))
 
   }
-  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] =
-  {
+
+  def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] = {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
     val cc = graph.connectedComponents()
     val ccVertices = cc.vertices.collect().toMap
-    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray//Lists with each subgraph
+    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray //Lists with each subgraph
 
     subGraphs
   }
 
 
-  def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] ={
+  def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] = {
     //Paramters original graph and subGraph
 
     //1. Get List of all vertex ids.
     val subGraphVertexIds = subGraphItr.toList
 
     //2. Get Vertices, filter so that we only take a vertex where Id exist in subgraph.
-    val newGraphVertices = graph.vertices.filter{
-      case (id,title) => subGraphVertexIds.contains(id)
+    val newGraphVertices = graph.vertices.filter {
+      case (id, title) => subGraphVertexIds.contains(id)
       case _ => false
     }
 
     //3. Get edges, filter so that we only take an edge where srcId AND dstId exist in subgraph.
-    val newGraphEdges = graph.edges.filter{
+    val newGraphEdges = graph.edges.filter {
       case Edge(srcId, dstId, _) => subGraphVertexIds.contains(srcId) && subGraphVertexIds.contains(dstId)
       case _ => false
     }
     //4. Create subGraph
-    val subGraph = Graph(newGraphVertices,newGraphEdges)
+    val subGraph = Graph(newGraphVertices, newGraphEdges)
 
     subGraph
   }
 
-  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String,Double]]={
+  def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String, Double]] = {
 
     //1. Create array which can hold each subgraph.
-    val allGraphs : Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
+    val allGraphs: Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
     //2. Create a loop depending on # of subGraphs
-    for(i <- 0 until Itr){
-      allGraphs(i) = create_subgraph_from_cc(graph,subGraphs(i))
+    for (i <- 0 until Itr) {
+      allGraphs(i) = create_subgraph_from_cc(graph, subGraphs(i))
     }
     allGraphs
   }
 
 
-  def filter_from_nodes_using_list(nodes : DataFrame): DataFrame ={
+  def filter_from_nodes_using_list(nodes: DataFrame): DataFrame = {
     //Specificy where to save file.
-    val filterWords=List("User:","Help:","Category talk:","Template talk:","Help talk:","Wikipedia:","Wikipedia talk:",
-      "MediaWiki:","MediaWiki talk:","MediaWiki","Template:","User talk:","Talk:","Module:")
+    val filterWords = List("User:", "Help:", "Category talk:", "Template talk:", "Help talk:", "Wikipedia:", "Wikipedia talk:",
+      "MediaWiki:", "MediaWiki talk:", "MediaWiki", "Template:", "User talk:", "Talk:", "Module:")
+
     def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
 
     val articles = nodes.filter(!containsUdf(col("title")))
@@ -278,18 +277,35 @@ object Util {
     return articles
   }
 
-  def filter_from_edges_using_list(nodes : DataFrame, edge : DataFrame): DataFrame ={
+  def filter_from_edges_using_list(nodes: DataFrame, edge: DataFrame): DataFrame = {
 
-    val filterWords=List("User:","Help:","Category talk:","Template talk:","Help talk:","Wikipedia:","Wikipedia talk:",
-      "MediaWiki:","MediaWiki talk:","MediaWiki","Template:","User talk:","Talk:","Module:")
+    val filterWords = List("User:", "Help:", "Category talk:", "Template talk:", "Help talk:", "Wikipedia:", "Wikipedia talk:",
+      "MediaWiki:", "MediaWiki talk:", "MediaWiki", "Template:", "User talk:", "Talk:", "Module:")
+
     def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
 
     val users = nodes.filter(containsUdf(col("title")))
 
-    val usersList = users.select("id").collect().map(_(0)).toList
+    val usersList = users.select("id").collect().map(_ (0)).toList
 
-    val newEdges = edge.filter((!($"src".isin(usersList:_*))) || (!($"dst".isin(usersList:_*))))
+    val newEdges = edge.filter((!($"src".isin(usersList: _*))) || (!($"dst".isin(usersList: _*))))
 
     return newEdges
+  }
+
+  def get_filtered_graph(): Graph[String, Double] = {
+    val nodes = filter_from_nodes_using_list(nodesDF).mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+    val edges = filter_from_edges_using_list(nodesDF, edgeDF).mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+    Graph(nodes, edges)
+  }
+
+  def get_filtered_graphframe(): GraphFrame = {
+    GraphFrame(filter_from_nodes_using_list(nodesDF), filter_from_edges_using_list(nodesDF, edgeDF))
   }
 }

@@ -3,7 +3,9 @@ import Util._
 object RuntimeTest {
 
   def compute_runtime(size: Int): Unit = {
-    val graph = get_subgraph(nodesDF, edgeDF, size, take_highest = true)
+    val filtered_nodes = filter_from_nodes_using_list(nodesDF)
+    val filtered_edges = filter_from_edges_using_list(nodesDF, edgeDF)
+    val graph = get_subgraph(filtered_nodes, filtered_edges, size, take_highest = true)
     val components = subgraphs_from_connected_components(graph)
     val subgraphs = create_all_subgraphs_from_cc(graph, components, components.length)
 
