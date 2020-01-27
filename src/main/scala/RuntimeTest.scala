@@ -36,7 +36,7 @@ object RuntimeTest {
   def main(args: Array[String]): Unit = {
     compute_runtime(5000)
     compute_runtime(10000)
-    compute_runtime(250000)
+    compute_runtime(25000)
     compute_runtime(50000)
     compute_runtime(150000)
   }
