@@ -265,19 +265,31 @@ object Util {
   }
 
 
-  def filter_users_from_nodes(nodes : DataFrame): Unit ={
+  def filter_from_nodes_using_list(nodes : DataFrame): DataFrame ={
     //Specificy where to save file.
-    val articles = nodes.filter(!col("title").startsWith("User")) //All nodes but NOT users
-    //articles.coalesce(1).write.json(nodeDir)
+    val filterWords=List("User:","Help:","Category talk:","Template talk:","Help talk:","Wikipedia:","Wikipedia talk:",
+      "MediaWiki:","MediaWiki talk:","MediaWiki","Template:","User talk:","Talk:","Module:")
+    def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
+
+    val articles = nodes.filter(!containsUdf(col("title")))
+    articles
+
+
+    return articles
   }
 
-  def filter_users_from_edges(nodes : DataFrame, edge : DataFrame): Unit ={
+  def filter_from_edges_using_list(nodes : DataFrame, edge : DataFrame): DataFrame ={
 
-    val users = nodes.filter(col("title").startsWith("User"))
+    val filterWords=List("User:","Help:","Category talk:","Template talk:","Help talk:","Wikipedia:","Wikipedia talk:",
+      "MediaWiki:","MediaWiki talk:","MediaWiki","Template:","User talk:","Talk:","Module:")
+    def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
+
+    val users = nodes.filter(containsUdf(col("title")))
+
     val usersList = users.select("id").collect().map(_(0)).toList
-    println("usersList: " + usersList)
 
     val newEdges = edge.filter((!($"src".isin(usersList:_*))) || (!($"dst".isin(usersList:_*))))
-    newEdges.show()
+
+    return newEdges
   }
 }
