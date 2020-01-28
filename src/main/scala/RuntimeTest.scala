@@ -8,9 +8,7 @@ object RuntimeTest {
   def compute_runtime(nodes: List[Double]): Unit = {
     var runtime_graphx = 0.0
     var runtime_pregel = 0.0
-    val filtered_nodes = filtered_graph.vertices.filter(n => nodes.contains(n._1))
-    val filtered_edges = filtered_graph.edges.filter(e => nodes.contains(e.srcId) || nodes.contains(e.dstId))
-    val filtered_subgraph = filtered_graph.subgraph(e => nodes.contains(e.srcId) || nodes.contains(e.dstId))
+    val filtered_subgraph = filtered_graph.subgraph(e => nodes.contains(e.srcId) || nodes.contains(e.dstId), (v, _) => nodes.contains(v))
     var size = filtered_subgraph.vertices.collect().length
     val source_id = filtered_subgraph.vertices.collect()(0)._1
 
