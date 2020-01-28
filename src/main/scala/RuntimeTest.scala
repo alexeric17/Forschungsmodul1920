@@ -1,32 +1,27 @@
 import Util._
+import org.apache.spark.graphx.Graph
 
 object RuntimeTest {
+  val filtered_nodes = filter_from_nodes_using_list(nodesDF)
+  val filtered_edges = filter_from_edges_using_list(nodesDF, edgeDF)
 
-  def compute_runtime(size: Int): Unit = {
-    val filtered_nodes = filter_from_nodes_using_list(nodesDF)
-    val filtered_edges = filter_from_edges_using_list(nodesDF, edgeDF)
-    val graph = get_subgraph(filtered_nodes, filtered_edges, size, take_highest = true)
-    val components = subgraphs_from_connected_components(graph)
-    val subgraphs = create_all_subgraphs_from_cc(graph, components, components.length)
-
-    println(s"${size / 1000}K: #Components: ${components.length}")
-    val sorted_components = subgraphs.sortBy(g => -g.vertices.collect().length)
+  def compute_runtime(size: Int, subgraph: Graph[String, Double]): Unit = {
     var runtime_graphx = 0.0
     var runtime_pregel = 0.0
+
+    println(s"${size / 1000}K:")
+    val source_id = subgraph.vertices.collect()(0)._1
     for (i <- 0 until 10) {
-      val component = sorted_components(i)
-      println(s"Size of component $i: ${component.vertices.collect().length}")
-      val source_id = component.vertices.collect().take(1)(0)._1
       var start = System.nanoTime()
-      shortest_path_graphx(component, List(source_id), source_id.toInt)
+      shortest_path_graphx(subgraph, List(source_id), source_id.toInt)
       var runtime = (System.nanoTime() - start) / 1000 / 1000
       println("Adding " + runtime + " ms to graphx")
       runtime_graphx += runtime.toFloat
 
       start = System.nanoTime()
-      shortest_path_pregel(component, source_id.toInt)
+      shortest_path_pregel(subgraph, source_id.toInt)
       runtime = (System.nanoTime() - start) / 1000 / 1000
-      println("Adding " + runtime + " to pregel")
+      println("Adding " + runtime + " ms to pregel")
       runtime_pregel += runtime.toFloat
     }
     val avg_runtime_graphx = runtime_graphx / 10
@@ -36,10 +31,14 @@ object RuntimeTest {
   }
 
   def main(args: Array[String]): Unit = {
-    compute_runtime(5000)
-    compute_runtime(10000)
-    compute_runtime(25000)
-    compute_runtime(50000)
-    compute_runtime(150000)
+    val filtered_graph = get_filtered_graph()
+    val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => c.size)
+    val biggest_component = connected_components(0)
+    val subgraph = create_subgraph_from_cc(filtered_graph, biggest_component)
+    compute_runtime(5000, subgraph)
+    compute_runtime(10000, subgraph)
+    compute_runtime(25000, subgraph)
+    compute_runtime(50000, subgraph)
+    compute_runtime(150000, subgraph)
   }
 }
