@@ -1,3 +1,5 @@
+import java.util.Calendar
+
 import Util._
 import org.apache.spark.graphx.Graph
 
@@ -31,14 +33,21 @@ object RuntimeTest {
   }
 
   def main(args: Array[String]): Unit = {
+    println(s"[${Calendar.getInstance().getTime()}] Computing filtered graph")
     val filtered_graph = get_filtered_graph()
     val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => c.size)
     val biggest_component = connected_components(0)
+    println(s"[${Calendar.getInstance().getTime()}] Creating subgraph of biggest component")
     val subgraph = create_subgraph_from_cc(filtered_graph, biggest_component)
+    println(s"[${Calendar.getInstance().getTime()}] Computing runtime for size 5000")
     compute_runtime(5000, subgraph)
+    println(s"[${Calendar.getInstance().getTime()}] Computing runtime for size 10000")
     compute_runtime(10000, subgraph)
+    println(s"[${Calendar.getInstance().getTime()}] Computing runtime for size 25000")
     compute_runtime(25000, subgraph)
+    println(s"[${Calendar.getInstance().getTime()}] Computing runtime for size 5ß000")
     compute_runtime(50000, subgraph)
+    println(s"[${Calendar.getInstance().getTime()}] Computing runtime for size 150000")
     compute_runtime(150000, subgraph)
   }
 }
