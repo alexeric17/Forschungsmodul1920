@@ -220,7 +220,9 @@ object Util {
 
   def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] = {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
+    println(s"Computing Connected components")
     val cc = graph.connectedComponents()
+    println(s"Done computing Connected components")
     val ccVertices = cc.vertices.collect().toMap
     val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray //Lists with each subgraph
 
@@ -229,6 +231,7 @@ object Util {
 
 
   def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] = {
+    println(s"Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
     //Paramters original graph and subGraph
 
     //1. Get List of all vertex ids.
