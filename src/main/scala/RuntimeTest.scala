@@ -35,7 +35,7 @@ object RuntimeTest {
   def main(args: Array[String]): Unit = {
     println(s"[${Calendar.getInstance().getTime()}] Computing filtered graph")
     val filtered_graph = get_filtered_graph()
-    val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => c.size)
+    val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => -c.size)
     val biggest_component = connected_components(0)
     println(s"[${Calendar.getInstance().getTime()}] Creating subgraph of biggest component")
     val subgraph = create_subgraph_from_cc(filtered_graph, biggest_component)
