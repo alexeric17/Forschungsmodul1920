@@ -18,8 +18,8 @@ object Util {
   val nodeFile = nodeDir + "/nodes.json"
   val edgeFile = edgeDir + "/edges.json"
 
-  val filteredNodeFile = filteredNodeDir + "filtered_nodes.json"
-  val filteredEdgeFile = filteredEdgeDir + "filtered_edges.json"
+  val filteredNodeFile = filteredNodeDir + "/filtered_nodes.json"
+  val filteredEdgeFile = filteredEdgeDir + "/filtered_edges.json"
 
   val spark = SparkSession
     .builder()
