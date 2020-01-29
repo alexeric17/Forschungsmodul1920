@@ -9,10 +9,17 @@ import org.graphframes.GraphFrame
 object Util {
   //set these to the correct paths and names for your project
   val FM1920HOME = ""
-  val nodeDir = FM1920HOME + "/data/nodes"
-  val edgeDir = FM1920HOME + "/data/edges"
+  val dataDir = FM1920HOME + "/data"
+  val nodeDir = dataDir + "/nodes"
+  val edgeDir = dataDir + "/edges"
+  val filteredNodeDir = dataDir + "/filtered_nodes"
+  val filteredEdgeDir = dataDir + "/filtered_edges"
+
   val nodeFile = nodeDir + "/nodes.json"
   val edgeFile = edgeDir + "/edges.json"
+
+  val filteredNodeFile = filteredNodeDir + "filtered_nodes.json"
+  val filteredEdgeFile = filteredEdgeDir + "filtered_edges.json"
 
   val spark = SparkSession
     .builder()
@@ -21,26 +28,6 @@ object Util {
     .getOrCreate()
 
   import spark.implicits._ //needed to avoid defining implicit encoders when serializing data to rdd
-
-  //For GraphX
-  //    nodeFile should have format |id|title|
-  //    edgeFile should have format |src|dst|
-  val nodesRDD = spark.read.json(nodeFile).mapPartitions(vertices => {
-    vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
-  }).rdd
-  //For each pair (src,dst) in edgeDF, create edge with weight 1. Using graphx Edge function: Edge(srcId,dstId,attr)
-  val edgesRDD = spark.read.json(edgeFile).mapPartitions(edgesRow => {
-    edgesRow.map(edgeRow => {
-      Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
-    })
-  }).rdd
-  val graph = Graph(nodesRDD, edgesRDD)
-
-
-  //For GraphFrame
-  val nodesDF = spark.read.json(nodeFile)
-  val edgeDF = spark.read.json(edgeFile)
-  val graphFrame = GraphFrame(nodesDF, edgeDF)
 
 
   def create_dict_from_nodes(nodes: DataFrame): collection.Map[Long, String] = {
@@ -298,19 +285,45 @@ object Util {
     return newEdges
   }
 
-  def get_filtered_graph(): Graph[String, Double] = {
-    val nodes = filter_from_nodes_using_list(nodesDF).mapPartitions(vertices => {
+  def get_graph(): Graph[String, Double] = {
+    //For GraphX
+    //    nodeFile should have format |id|title|
+    //    edgeFile should have format |src|dst|
+    val nodesRDD = spark.read.json(nodeFile).mapPartitions(vertices => {
       vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
     }).rdd
-    val edges = filter_from_edges_using_list(nodesDF, edgeDF).mapPartitions(edgesRow => {
+    //For each pair (src,dst) in edgeDF, create edge with weight 1. Using graphx Edge function: Edge(srcId,dstId,attr)
+    val edgesRDD = spark.read.json(edgeFile).mapPartitions(edgesRow => {
       edgesRow.map(edgeRow => {
         Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
       })
     }).rdd
-    Graph(nodes, edges)
+    Graph(nodesRDD, edgesRDD)
+  }
+
+  def get_graphframe(): GraphFrame = {
+    val nodesDF = spark.read.json(nodeFile)
+    val edgeDF = spark.read.json(edgeFile)
+    GraphFrame(nodesDF, edgeDF)
+  }
+
+  def get_filtered_graph(): Graph[String, Double] = {
+    val filteredNodesRDD = spark.read.json(filteredNodeFile).mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+    //For each pair (src,dst) in edgeDF, create edge with weight 1. Using graphx Edge function: Edge(srcId,dstId,attr)
+    val filteredEdgesRDD = spark.read.json(filteredEdgeFile).mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+
+    Graph(filteredNodesRDD, filteredEdgesRDD)
   }
 
   def get_filtered_graphframe(): GraphFrame = {
-    GraphFrame(filter_from_nodes_using_list(nodesDF), filter_from_edges_using_list(nodesDF, edgeDF))
+    val filteredNodesDF = spark.read.json(filteredNodeFile)
+    val filteredEdgesDF = spark.read.json(filteredEdgeFile)
+    GraphFrame(filteredNodesDF, filteredEdgesDF)
   }
 }

@@ -15,6 +15,7 @@ object degreeDF {
     //2. Create DataFrame for outEdges and inEdges
     //   OutEdges |ID|#outEdges|
     //   InEdges  |ID|#inEdges |
+    val edgeDF = spark.read.json(edgeFile)
     val outEdges = edgeDF.select("src").groupBy("src").count()
       .withColumnRenamed("count", "outEdges").withColumnRenamed("src", "id")
     val inEdges = edgeDF.select("dst").groupBy("dst").count()

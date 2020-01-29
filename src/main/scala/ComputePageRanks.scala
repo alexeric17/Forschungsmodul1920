@@ -7,6 +7,6 @@ object ComputePageRanks {
     val ranks = filtered_graph.pageRank.maxIter(1).run()
     val runtime = (System.nanoTime() - start) / 1000 / 1000
     print(s"Runtime: $runtime ms\n")
-    ranks.vertices.write.json(FM1920HOME + "/pageranks")
+    ranks.vertices.coalesce(1).write.json(dataDir + "/pageranks")
   }
 }

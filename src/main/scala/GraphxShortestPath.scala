@@ -23,6 +23,7 @@ object GraphxShortestPath {
     //---Test end----
 
     //1.  GraphxShortestPath
+    val graph = get_filtered_graph()
     val useShortestPath = 0
     if (useShortestPath == 1) {
       println("Shortestpath from 4 to node 3")
