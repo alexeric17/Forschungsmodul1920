@@ -286,12 +286,12 @@ object Util {
   }
 
   def compute_filtered_graph() = {
-    val filteredNodesDF = spark.read.json(filteredNodeFile)
-    val filteredEdgesDF = spark.read.json(filteredEdgeFile)
-    val nodes = filter_from_nodes_using_list(filteredNodesDF).mapPartitions(vertices => {
+    val nodesDF = spark.read.json(nodeFile)
+    val edgesDF = spark.read.json(edgeFile)
+    val nodes = filter_from_nodes_using_list(nodesDF).mapPartitions(vertices => {
       vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
     }).rdd
-    val edges = filter_from_edges_using_list(filteredNodesDF, filteredEdgesDF).mapPartitions(edgesRow => {
+    val edges = filter_from_edges_using_list(nodesDF, edgesDF).mapPartitions(edgesRow => {
       edgesRow.map(edgeRow => {
         Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
       })
@@ -300,9 +300,9 @@ object Util {
   }
 
   def compute_filtered_graphframe(): GraphFrame = {
-    val filteredNodesDF = spark.read.json(filteredNodeFile)
-    val filteredEdgesDF = spark.read.json(filteredEdgeFile)
-    GraphFrame(filter_from_nodes_using_list(filteredNodesDF), filter_from_edges_using_list(filteredNodesDF, filteredEdgesDF))
+    val nodesDF = spark.read.json(nodeFile)
+    val edgesDF = spark.read.json(edgeFile)
+    GraphFrame(filter_from_nodes_using_list(nodesDF), filter_from_edges_using_list(nodesDF, edgesDF))
   }
 
   def get_graph(): Graph[String, Double] = {
