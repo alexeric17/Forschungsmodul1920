@@ -285,6 +285,26 @@ object Util {
     return newEdges
   }
 
+  def compute_filtered_graph() = {
+    val filteredNodesDF = spark.read.json(filteredNodeFile)
+    val filteredEdgesDF = spark.read.json(filteredEdgeFile)
+    val nodes = filter_from_nodes_using_list(filteredNodesDF).mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+    val edges = filter_from_edges_using_list(filteredNodesDF, filteredEdgesDF).mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+    Graph(nodes, edges)
+  }
+
+  def compute_filtered_graphframe(): GraphFrame = {
+    val filteredNodesDF = spark.read.json(filteredNodeFile)
+    val filteredEdgesDF = spark.read.json(filteredEdgeFile)
+    GraphFrame(filter_from_nodes_using_list(filteredNodesDF), filter_from_edges_using_list(filteredNodesDF, filteredEdgesDF))
+  }
+
   def get_graph(): Graph[String, Double] = {
     //For GraphX
     //    nodeFile should have format |id|title|
