@@ -16,6 +16,7 @@ object RuntimeTestMainComponent {
     println(s"${size / 1000}K:")
     for (i <- 0 until 30) {
       val source_id = filtered_subgraph.vertices.collect()(r.nextInt() % size)._1 //random node
+      println("Computing SSSP for vertex with id " + source_id)
       var start = System.nanoTime()
       shortest_path_graphx(filtered_subgraph, List(source_id), source_id.toInt)
       var runtime = (System.nanoTime() - start) / 1000 / 1000
