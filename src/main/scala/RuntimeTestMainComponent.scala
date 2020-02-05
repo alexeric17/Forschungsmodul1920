@@ -2,13 +2,15 @@ import java.util.Calendar
 
 import Util._
 
+import scala.collection.mutable
+
 object RuntimeTestMainComponent {
   val filtered_graph = get_filtered_graph()
 
   def compute_runtime(nodes: List[Double]): Unit = {
     var runtime_graphx = 0.0
     var runtime_pregel = 0.0
-    var avg_path_length = 0.0
+    var pathlengths = new mutable.HashMap[Int, Int]
     val filtered_subgraph = filtered_graph.subgraph(e => nodes.contains(e.srcId) || nodes.contains(e.dstId), (v, _) => nodes.contains(v))
     var size = filtered_subgraph.vertices.collect().length
     val r = scala.util.Random
@@ -31,16 +33,22 @@ object RuntimeTestMainComponent {
       runtime_pregel += runtime.toFloat
 
       vertices.foreach(v => {
-        current_avg_path_length += v._2._2.length.toFloat / size
+        val length = v._2._2.length
+        if (!pathlengths.contains(length)) {
+          pathlengths(length) = 1
+        } else {
+          pathlengths(length) += 1
+        }
       })
-      println("Current average path length: " + current_avg_path_length)
-      avg_path_length += current_avg_path_length / 30
+      println("Current average path lengths: ")
+      pathlengths.foreach(p => println("Nr of paths of Length " + p._1 + ": " + p._2))
     }
     val avg_runtime_graphx = runtime_graphx / 30
     val avg_runtime_pregel = runtime_pregel / 30
     println(s"${size / 1000}K, graphx: $avg_runtime_graphx ms")
     println(s"${size / 1000}K, pregel: $avg_runtime_pregel ms")
-    println("Average path length: " + avg_path_length)
+    pathlengths.foreach(p => println("Nr of paths of Length " + p._1 + ": " + p._2))
+
   }
 
   def main(args: Array[String]): Unit = {
