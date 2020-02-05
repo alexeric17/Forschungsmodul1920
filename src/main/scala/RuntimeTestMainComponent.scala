@@ -15,7 +15,8 @@ object RuntimeTestMainComponent {
 
     println(s"${size / 1000}K:")
     for (i <- 0 until 30) {
-      val source_id = filtered_subgraph.vertices.collect()(r.nextInt() % size)._1 //random node
+      var current_avg_path_length = 0.0
+      val source_id = filtered_subgraph.vertices.collect()(math.abs(r.nextInt() % size))._1 //random node
       println("Computing SSSP for vertex with id " + source_id)
       var start = System.nanoTime()
       shortest_path_graphx(filtered_subgraph, List(source_id), source_id.toInt)
@@ -30,14 +31,16 @@ object RuntimeTestMainComponent {
       runtime_pregel += runtime.toFloat
 
       vertices.foreach(v => {
-        avg_path_length += v._2._2.length / size / 30
+        current_avg_path_length += v._2._2.length.toFloat / size
       })
-      println("Current average path length: " + avg_path_length)
+      println("Current average path length: " + current_avg_path_length)
+      avg_path_length += current_avg_path_length / 30
     }
     val avg_runtime_graphx = runtime_graphx / 30
     val avg_runtime_pregel = runtime_pregel / 30
     println(s"${size / 1000}K, graphx: $avg_runtime_graphx ms")
     println(s"${size / 1000}K, pregel: $avg_runtime_pregel ms")
+    println("Average path length: " + avg_path_length)
   }
 
   def main(args: Array[String]): Unit = {
