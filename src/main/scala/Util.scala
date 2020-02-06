@@ -1,20 +1,26 @@
+import java.util.Calendar
+
 import org.apache.spark.graphx
 import org.apache.spark.graphx.lib.ShortestPaths
 import org.apache.spark.graphx.{Edge, EdgeContext, EdgeDirection, EdgeTriplet, Graph, VertexId}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
-import org.graphframes.lib.ConnectedComponents
-
-import scala.collection.Map
 
 object Util {
   //set these to the correct paths and names for your project
   val FM1920HOME = ""
-  val nodeDir = FM1920HOME + "/data/nodes"
-  val edgeDir = FM1920HOME + "/data/edges"
+  val dataDir = FM1920HOME + "/data"
+  val nodeDir = dataDir + "/nodes"
+  val edgeDir = dataDir + "/edges"
+  val filteredNodeDir = dataDir + "/filtered_nodes"
+  val filteredEdgeDir = dataDir + "/filtered_edges"
+
   val nodeFile = nodeDir + "/nodes.json"
   val edgeFile = edgeDir + "/edges.json"
+
+  val filteredNodeFile = filteredNodeDir + "/filtered_nodes.json"
+  val filteredEdgeFile = filteredEdgeDir + "/filtered_edges.json"
 
   val spark = SparkSession
     .builder()
@@ -243,15 +249,18 @@ object Util {
 
   def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] = {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
+    println(s"[${Calendar.getInstance().getTime()}] Computing Connected components")
     val cc = graph.connectedComponents()
+    println(s"[${Calendar.getInstance().getTime()}] Done computing Connected components")
     val ccVertices = cc.vertices.collect().toMap
-    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.keys).values.toArray //Lists with each subgraph
+    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray //Lists with each subgraph
 
     subGraphs.sortBy(x => x.size)(Ordering[Int].reverse)
   }
 
 
   def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] = {
+    println(s"[${Calendar.getInstance().getTime()}] Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
     //Paramters original graph and subGraph
 
     //1. Get List of all vertex ids.
@@ -277,7 +286,7 @@ object Util {
   def create_all_subgraphs_from_cc(graph: Graph[String, Double], subGraphs: Array[Iterable[VertexId]], Itr: Int): Array[Graph[String, Double]] = {
 
     //1. Create array which can hold each subgraph.
-    val allGraphs: Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr-1)
+    val allGraphs: Array[Graph[String, Double]] = new Array[Graph[String, Double]](Itr)
     //2. Create a loop depending on # of subGraphs
     for (i <- 0 until Itr) {
       allGraphs(i) = create_subgraph_from_cc(graph, subGraphs(i))
@@ -294,6 +303,8 @@ object Util {
     def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
 
     val articles = nodes.filter(!containsUdf(col("title")))
+    articles
+
 
     return articles
   }
@@ -312,6 +323,68 @@ object Util {
     val newEdges = edge.filter((!($"src".isin(usersList: _*))) || (!($"dst".isin(usersList: _*))))
 
     return newEdges
+  }
+
+  def compute_filtered_graph() = {
+    val nodesDF = spark.read.json(nodeFile)
+    val edgesDF = spark.read.json(edgeFile)
+    val nodes = filter_from_nodes_using_list(nodesDF).mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+    val edges = filter_from_edges_using_list(nodesDF, edgesDF).mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+    Graph(nodes, edges)
+  }
+
+  def compute_filtered_graphframe(): GraphFrame = {
+    val nodesDF = spark.read.json(nodeFile)
+    val edgesDF = spark.read.json(edgeFile)
+    GraphFrame(filter_from_nodes_using_list(nodesDF), filter_from_edges_using_list(nodesDF, edgesDF))
+  }
+
+  def get_graph(): Graph[String, Double] = {
+    //For GraphX
+    //    nodeFile should have format |id|title|
+    //    edgeFile should have format |src|dst|
+    val nodesRDD = spark.read.json(nodeFile).mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+    //For each pair (src,dst) in edgeDF, create edge with weight 1. Using graphx Edge function: Edge(srcId,dstId,attr)
+    val edgesRDD = spark.read.json(edgeFile).mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+    Graph(nodesRDD, edgesRDD)
+  }
+
+  def get_graphframe(): GraphFrame = {
+    val nodesDF = spark.read.json(nodeFile)
+    val edgeDF = spark.read.json(edgeFile)
+    GraphFrame(nodesDF, edgeDF)
+  }
+
+  def get_filtered_graph(): Graph[String, Double] = {
+    val filteredNodesRDD = spark.read.json(filteredNodeFile).mapPartitions(vertices => {
+      vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
+    }).rdd
+    //For each pair (src,dst) in edgeDF, create edge with weight 1. Using graphx Edge function: Edge(srcId,dstId,attr)
+    val filteredEdgesRDD = spark.read.json(filteredEdgeFile).mapPartitions(edgesRow => {
+      edgesRow.map(edgeRow => {
+        Edge(edgeRow.getAs[Long]("src"), edgeRow.getAs[Long]("dst"), 1.0)
+      })
+    }).rdd
+
+    Graph(filteredNodesRDD, filteredEdgesRDD)
+  }
+
+  def get_filtered_graphframe(): GraphFrame = {
+    val filteredNodesDF = spark.read.json(filteredNodeFile)
+    val filteredEdgesDF = spark.read.json(filteredEdgeFile)
+    GraphFrame(filteredNodesDF, filteredEdgesDF)
   }
 
   def degreeHeurstics(graph: Graph[String, Double]): Graph[Int, Double] = {
