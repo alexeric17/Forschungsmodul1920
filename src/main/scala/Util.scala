@@ -495,23 +495,32 @@ object Util {
 
   }
 
-  def heurstics_sssp_pregel1(graph: Graph[String, Double], src_id: Int): Array[(VertexId, (Double, List[VertexId]))] = {
-    val initialGraph1: Graph[(Double, List[VertexId]), Double] =
-    //Init graph. All vertices except 'root' have distance infinity. All vertices except 'root' have empty list. Root has itself in list.
-      graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
+  def shortest_path_pagerank_heuristics(): Unit = {
+    //1 Create Graphframe, where each node is annotated with its pagerank
+    val filtered_nodes = spark.read.json(filteredNodeFile)
+      .select("id")
+    println(filtered_nodes.collect().length)
+    val filtered_edges = spark.read.json(filteredEdgeFile)
+    println(GraphFrame(filtered_nodes, filtered_edges).vertices.collect().mkString("\n"))
+    val pageranks = spark.read.json(pagerankFile)
+    val annotated_nodes = filtered_nodes.join(right = pageranks, usingColumns = Seq("id"), joinType = "full").na.fill(0.0)
+    val graph = GraphFrame(annotated_nodes, filtered_edges)
+    val reversed_graph = graph.toGraphX.reverse
+    println(reversed_graph.vertices.collect().length)
 
-    val sssp1 = initialGraph1.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
-      (id, dist, newDist) => if (dist._1 < newDist._1) dist else newDist,
+    val initGraph2 = reversed_graph.mapVertices((id, row) => (row.getDouble(1), (-1, -1.0)))
 
-      triplet => { //send msg
-        if (triplet.srcAttr._1 < triplet.dstAttr._1 - triplet.attr) {
-          Iterator((triplet.dstId, (triplet.srcAttr._1 + triplet.attr, triplet.srcAttr._2 :+ triplet.dstId)))
-        } else {
-          Iterator.empty
-        }
-      }, //Merge Message
-      (a, b) => if (a._1 < b._1) a else b)
+    val initiGraph2Pregel = initGraph2.pregel((-1, -1.0), 1, EdgeDirection.In)(
+      (id, attr, msg) => (attr._1, msg),
 
-    sssp1.vertices.collect()
+      triplet => {
+        //send msg
+        Iterator((triplet.dstId, (triplet.srcId.toInt, triplet.srcAttr._1)))
+      },
+      (a, b) => if (a._2 > b._2) a else b
+    )
+    val annotated_graph = graph.toGraphX.reverse
+
+    println(annotated_graph.vertices.collect().mkString("\n"))
   }
 }
