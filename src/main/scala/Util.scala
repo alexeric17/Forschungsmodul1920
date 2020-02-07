@@ -1,8 +1,7 @@
 import java.util.Calendar
 
-import org.apache.spark.graphx
 import org.apache.spark.graphx.lib.ShortestPaths
-import org.apache.spark.graphx.{Edge, EdgeContext, EdgeDirection, EdgeTriplet, Graph, VertexId}
+import org.apache.spark.graphx.{Edge, EdgeDirection, Graph, VertexId}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
@@ -15,12 +14,15 @@ object Util {
   val edgeDir = dataDir + "/edges"
   val filteredNodeDir = dataDir + "/filtered_nodes"
   val filteredEdgeDir = dataDir + "/filtered_edges"
+  val pagerankDir = dataDir + "/pageranks"
 
   val nodeFile = nodeDir + "/nodes.json"
   val edgeFile = edgeDir + "/edges.json"
 
   val filteredNodeFile = filteredNodeDir + "/filtered_nodes.json"
   val filteredEdgeFile = filteredEdgeDir + "/filtered_edges.json"
+
+  val pagerankFile = pagerankDir + "/pageranks.json"
 
   val spark = SparkSession
     .builder()
@@ -240,7 +242,7 @@ object Util {
 
     //2. Get each subGraph as a list.
     val ccVertices = cc.vertices.collect().toMap
-    val subGraphs = ccVertices.groupBy(_._2).mapValues(_.map(_._1))
+    val subGraphs = ccVertices.groupBy(_._2).mapValues(_.keys)
     //3. Get size of each subGraph and number of subgraphs
     val numberOfSubGraphs = cc.vertices.values.distinct.count
     val subGraphSizes = subGraphs.map(x => (x._1, x._2.size))
@@ -249,18 +251,18 @@ object Util {
 
   def subgraphs_from_connected_components(graph: Graph[String, Double]): Array[Iterable[VertexId]] = {
     //Calculates connectedComponents for a given graph and returns an array with all the subGraphs.
-    println(s"[${Calendar.getInstance().getTime()}] Computing Connected components")
+    println(s"[${Calendar.getInstance().getTime}] Computing Connected components")
     val cc = graph.connectedComponents()
-    println(s"[${Calendar.getInstance().getTime()}] Done computing Connected components")
+    println(s"[${Calendar.getInstance().getTime}] Done computing Connected components")
     val ccVertices = cc.vertices.collect().toMap
-    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray //Lists with each subgraph
+    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.keys).values.toArray //Lists with each subgraph
 
     subGraphs.sortBy(x => x.size)(Ordering[Int].reverse)
   }
 
 
   def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] = {
-    println(s"[${Calendar.getInstance().getTime()}] Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
+    println(s"[${Calendar.getInstance().getTime}] Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
     //Paramters original graph and subGraph
 
     //1. Get List of all vertex ids.
@@ -306,7 +308,7 @@ object Util {
     articles
 
 
-    return articles
+    articles
   }
 
   def filter_from_edges_using_list(nodes: DataFrame, edge: DataFrame): DataFrame = {
@@ -320,9 +322,9 @@ object Util {
 
     val usersList = users.select("id").collect().map(_ (0)).toList
 
-    val newEdges = edge.filter((!($"src".isin(usersList: _*))) || (!($"dst".isin(usersList: _*))))
+    val newEdges = edge.filter((!$"src".isin(usersList: _*)) || (!$"dst".isin(usersList: _*)))
 
-    return newEdges
+    newEdges
   }
 
   def compute_filtered_graph() = {
@@ -397,13 +399,13 @@ object Util {
   def reProdPath(graph: Graph[(Int, Double), Double], dst: Int): List[Int] = {
     val path = List()
     var currentId = dst
-    val seenVertices = graph.vertices.filter(x => (x._2._1 != -1)).collect()
+    val seenVertices = graph.vertices.filter(x => x._2._1 != -1).collect()
     println(seenVertices.mkString("\n"))
 
-    return path
+    path
   }
 
-  def heuristics_shortestPath_pair(graph: Graph[String, Double], src: Int, dst: Int): (Graph[(Int, Double), Double], Int) = {
+  def heuristics_shortestPath_pair(graph: Graph[String, Double], src: Int, dst: Int, nr_neighbors: Int): (Graph[(Int, Double), Double], Int) = {
     //Assuming the graph has the heurstics applied to the edges.
     //Each step over an edge will be a distance +1.
 
@@ -416,12 +418,12 @@ object Util {
     //Each node has (ID,  (previousID, distance))
 
     //Return
-    val resultingGraph = runShortestPath_deg(initGraph, src, dst, src, 0.0)
+    val resultingGraph = runShortestPath_deg(initGraph, src, dst, src, 0.0, nr_neighbors)
     resultingGraph
 
   }
 
-  def runShortestPath_deg(graph: Graph[(Int, Double), Double], currentId: Int, dst: Int, cameFrom: Int, distance: Double): (Graph[(Int, Double), Double], Int) = {
+  def runShortestPath_deg(graph: Graph[(Int, Double), Double], currentId: Int, dst: Int, cameFrom: Int, distance: Double, nr_neighbors: Int): (Graph[(Int, Double), Double], Int) = {
 
     //Returns a tuple (Graph, int) if tuple._2 == 1 path was found else not.
 
@@ -435,30 +437,29 @@ object Util {
     val updatedGraph = graph.mapVertices((id, attr) => if (id == currentId && (attr._2 == Double.PositiveInfinity || attr._2 > distance)) (cameFrom, distance) else (attr._1, attr._2))
 
     //3. Find neighbors for current ID.
-    val neighbors = graph.edges.collect().filter(e => (e.srcId == currentId))
-
-    //If dst is found in list return. But dst might be found
-    if(neighbors.contains(dst)) {
-      //Return the last call.
-      return(runShortestPath_deg(updatedGraph,dst,dst,currentId,distance+1.0))
-    }
+    val neighbors = graph.edges.collect().filter(e => e.srcId == currentId)
 
     //4. Get top 3 outDeg neighbors.
-    val sortNeighborsByDeg = neighbors.sortBy(e => e.attr).map(e => e.dstId).toList.take(3) //Sort byDeg, save only the ID.
+    val sortNeighborsByDeg = neighbors.sortBy(e => e.attr).map(e => e.dstId).toList //Sort byDeg, save only the ID.
 
+    //If dst is found in list return. But dst might be found
+    if (sortNeighborsByDeg.contains(dst)) {
+      //Return the last call.
+      return runShortestPath_deg(updatedGraph, dst, dst, currentId, distance + 1.0, nr_neighbors)
+    }
 
     //5. Visit the best neighbors(highest deg)
 
-    for (nextId <- sortNeighborsByDeg) {
+    for (nextId <- sortNeighborsByDeg.take(nr_neighbors)) {
 
       //Run recursive
-      println("I am on vertex: ",currentId + "My neighbor I am looking at is: ",nextId)
+      println("I am on vertex: ", currentId + "My neighbor I am looking at is: ", nextId)
 
       //check if neighbors distance is greater than current distance. IF yes, update it.
       val neig = updatedGraph.vertices.filter(v => v._1 == nextId).take(1)
 
-      if(neig(0)._2._2 > distance) {
-        val result = runShortestPath_deg(updatedGraph, nextId.toInt, dst, currentId, distance + 1.0)
+      if (neig(0)._2._2 > distance) {
+        val result = runShortestPath_deg(updatedGraph, nextId.toInt, dst, currentId, distance + 1.0, nr_neighbors)
 
         if (result._2 == 1) {
           return result
@@ -469,32 +470,33 @@ object Util {
     (updatedGraph, 0)
   }
 
-  def heuristic_sssp_pregel(graph: Graph[String,Double], src_id: Int, n:Int): Array[(VertexId,(Double,List[VertexId]))] = {
+  def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, n: Int): Array[(VertexId, (Double, List[VertexId]))] = {
     //n is how many of highest outDeg neighbours we take.
     //Initiallize the graph.
     val edges = graph.edges.collect()
     val initGraph: Graph[(Double, List[VertexId]), Double] =
-      graph.mapVertices((id,_) => if(id==src_id)(0.0,List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
+      graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
 
-    val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()),Int.MaxValue, EdgeDirection.Out)(
-      (id, attr, msg) => if(msg._1 < attr._1) msg else attr,
+    val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
+      (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
       triplet => {
 
         val neighbours = edges.filter(e => e.srcId == triplet.srcId).sortBy(e => e.attr).map(e => e.dstId).toList.take(n)
-        if(neighbours.contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - triplet.attr))){
-          Iterator((triplet.dstId, (triplet.srcAttr._1 + triplet.attr, triplet.srcAttr._2:+ triplet.dstId)))
+        if (neighbours.contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - triplet.attr))) {
+          Iterator((triplet.dstId, (triplet.srcAttr._1 + triplet.attr, triplet.srcAttr._2 :+ triplet.dstId)))
         } else {
           Iterator.empty
         }
       },
-      (a, b) => if(a._1 < b._1) a else b)
+      (a, b) => if (a._1 < b._1) a else b)
 
     sssp.vertices.collect()
 
   }
 
+  //TODO finish (not yet usable)
   def shortest_path_pagerank_heuristics(): Unit = {
     //1 Create Graphframe, where each node is annotated with its pagerank
     val filtered_nodes = spark.read.json(filteredNodeFile)

@@ -11,6 +11,6 @@ object ComputePageRanks {
     spark.createDataFrame(ranks.vertices.distinct()).toDF("id", "pagerank")
       .coalesce(1)
       .write
-      .json(dataDir + "/pageranks")
+      .json(pagerankDir)
   }
 }
