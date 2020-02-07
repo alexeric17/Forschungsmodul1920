@@ -32,8 +32,10 @@ object RuntimeTest {
     val avg_runtime_pregel = runtimes_pregel.sum.toLong / runtimes_pregel.length
     val stddev_graphx = math.sqrt(runtimes_graphx.map(a => math.pow(a - avg_runtime_graphx, 2)).sum / runtimes_graphx.size)
     val stddev_pregel = math.sqrt(runtimes_pregel.map(a => math.pow(a - avg_runtime_pregel, 2)).sum / runtimes_pregel.size)
-    println(s"${size / 1000}K, graphx: $avg_runtime_graphx ms [standard deviation: $stddev_graphx]")
-    println(s"${size / 1000}K, pregel: $avg_runtime_pregel ms [standard deviation: $stddev_pregel]")
+    val stderr_graphx = stddev_graphx / math.sqrt(runtimes_graphx.length)
+    val stderr_pregel = stddev_pregel / math.sqrt(runtimes_pregel.length)
+    println(s"${size / 1000}K, graphx: $avg_runtime_graphx ms [standard error: $stderr_graphx]")
+    println(s"${size / 1000}K, pregel: $avg_runtime_pregel ms [standard error: $stderr_pregel]")
   }
 
   def main(args: Array[String]): Unit = {
