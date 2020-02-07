@@ -449,8 +449,8 @@ object Util {
     }
 
     //5. Visit the best neighbors(highest deg)
-
-    for (nextId <- sortNeighborsByDeg.take(nr_neighbors)) {
+    val top_n_neighbors = sortNeighborsByDeg.take(nr_neighbors)
+    for (nextId <- top_n_neighbors) {
 
       //Run recursive
       println("I am on vertex: ", currentId + "My neighbor I am looking at is: ", nextId)
