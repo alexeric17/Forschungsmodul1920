@@ -6,21 +6,31 @@ import org.apache.spark.graphx.{Edge, EdgeContext, EdgeDirection, EdgeTriplet, G
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
+import org.graphframes.lib.ConnectedComponents
+
+import scala.collection.Map
 
 object Util {
   //set these to the correct paths and names for your project
-  val FM1920HOME = ""
+  val FM1920HOME = "/home/alexander/forschungsmodul1920"
   val dataDir = FM1920HOME + "/data"
   val nodeDir = dataDir + "/nodes"
   val edgeDir = dataDir + "/edges"
+  /*
   val filteredNodeDir = dataDir + "/filtered_nodes"
   val filteredEdgeDir = dataDir + "/filtered_edges"
 
+   */
+
   val nodeFile = nodeDir + "/nodes.json"
   val edgeFile = edgeDir + "/edges.json"
-
+/*
   val filteredNodeFile = filteredNodeDir + "/filtered_nodes.json"
   val filteredEdgeFile = filteredEdgeDir + "/filtered_edges.json"
+
+ */
+
+
 
   val spark = SparkSession
     .builder()
@@ -29,7 +39,7 @@ object Util {
     .getOrCreate()
 
   import spark.implicits._ //needed to avoid defining implicit encoders when serializing data to rdd
-
+/*
   //For GraphX
   //    nodeFile should have format |id|title|
   //    edgeFile should have format |src|dst|
@@ -49,7 +59,7 @@ object Util {
   val nodesDF = spark.read.json(nodeFile)
   val edgeDF = spark.read.json(edgeFile)
   val graphFrame = GraphFrame(nodesDF, edgeDF)
-
+*/
 
   def create_dict_from_nodes(nodes: DataFrame): collection.Map[Long, String] = {
     nodes
@@ -253,14 +263,13 @@ object Util {
     val cc = graph.connectedComponents()
     println(s"[${Calendar.getInstance().getTime()}] Done computing Connected components")
     val ccVertices = cc.vertices.collect().toMap
-    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.map(_._1)).values.toArray //Lists with each subgraph
+    val subGraphs: Array[Iterable[VertexId]] = ccVertices.groupBy(_._2).mapValues(_.keys).values.toArray //Lists with each subgraph
 
     subGraphs.sortBy(x => x.size)(Ordering[Int].reverse)
   }
 
 
   def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] = {
-    println(s"[${Calendar.getInstance().getTime()}] Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
     //Paramters original graph and subGraph
 
     //1. Get List of all vertex ids.
@@ -305,8 +314,6 @@ object Util {
     val articles = nodes.filter(!containsUdf(col("title")))
     articles
 
-
-    return articles
   }
 
   def filter_from_edges_using_list(nodes: DataFrame, edge: DataFrame): DataFrame = {
@@ -366,7 +373,7 @@ object Util {
     val edgeDF = spark.read.json(edgeFile)
     GraphFrame(nodesDF, edgeDF)
   }
-
+/*
   def get_filtered_graph(): Graph[String, Double] = {
     val filteredNodesRDD = spark.read.json(filteredNodeFile).mapPartitions(vertices => {
       vertices.map(vertexRow => (vertexRow.getAs[VertexId]("id"), vertexRow.getAs[String]("title")))
@@ -386,6 +393,8 @@ object Util {
     val filteredEdgesDF = spark.read.json(filteredEdgeFile)
     GraphFrame(filteredNodesDF, filteredEdgesDF)
   }
+
+ */
 
   def degreeHeurstics(graph: Graph[String, Double]): Graph[Int, Double] = {
     //1. Get outDegree for each vertex (Id,outdegree)
@@ -431,25 +440,26 @@ object Util {
       return (graph.mapVertices((id, attr) => if (id == dst) (cameFrom, distance) else (attr._1, attr._2)), 1)
     }
 
-    //2. Update current node. Remember where we came from and increase distance.
+    //2. Update current node. Update camefrom and distance.
     val updatedGraph = graph.mapVertices((id, attr) => if (id == currentId && (attr._2 == Double.PositiveInfinity || attr._2 > distance)) (cameFrom, distance) else (attr._1, attr._2))
 
     //3. Find neighbors for current ID.
     val neighbors = graph.edges.collect().filter(e => (e.srcId == currentId))
 
+
+    //4. Get top 3 outDeg neighbors.
+    val sortNeighbors = neighbors.sortBy(e => e.attr).map(e => e.dstId).toList //Sort byDeg, save only the ID.
+    val topNeig = sortNeighbors.take(5)
+
     //If dst is found in list return. But dst might be found
-    if(neighbors.contains(dst)) {
+    if(sortNeighbors.contains(dst)) {
       //Return the last call.
       return(runShortestPath_deg(updatedGraph,dst,dst,currentId,distance+1.0))
     }
 
-    //4. Get top 3 outDeg neighbors.
-    val sortNeighborsByDeg = neighbors.sortBy(e => e.attr).map(e => e.dstId).toList.take(3) //Sort byDeg, save only the ID.
-
-
     //5. Visit the best neighbors(highest deg)
 
-    for (nextId <- sortNeighborsByDeg) {
+    for (nextId <- topNeig) {
 
       //Run recursive
       println("I am on vertex: ",currentId + "My neighbor I am looking at is: ",nextId)
