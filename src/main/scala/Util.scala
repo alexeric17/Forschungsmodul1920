@@ -470,6 +470,8 @@ object Util {
     for (nextId <- topNeig) {
 
       //Run recursive
+      println("(" +currentId + "," + nextId + ")")
+
       //check if neighbors distance is greater than current distance. IF yes, update it.
       val neig = updatedGraph.vertices.filter(v => v._1 == nextId).take(1)
 
