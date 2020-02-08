@@ -1,14 +1,11 @@
 import java.util.Calendar
 
-import org.apache.spark.graphx
 import org.apache.spark.graphx.lib.ShortestPaths
-import org.apache.spark.graphx.{Edge, EdgeContext, EdgeDirection, EdgeTriplet, Graph, VertexId}
+import org.apache.spark.graphx.{Edge, EdgeDirection, Graph, VertexId}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
-import org.graphframes.lib.ConnectedComponents
 
-import scala.collection.Map
 import scala.collection.mutable.ListBuffer
 
 object Util {
@@ -431,7 +428,7 @@ object Util {
 
     //Return
     val resultingGraph = runShortestPath_deg(initGraph, src, dst, src, 0.0, nr_neighbors)
-    val path = reProdPath(resultingGraph._1,src,dst)
+    val path = reProdPath(resultingGraph._1, src, dst)
     print(path)
     resultingGraph
 
@@ -516,35 +513,36 @@ object Util {
 
   }
 }
-  //TODO finish (not yet usable)
-  /*def shortest_path_pagerank_heuristics(): Unit = {
-    //1 Create Graphframe, where each node is annotated with its pagerank
-    val filtered_nodes = spark.read.json(filteredNodeFile)
-      .select("id")
-    println(filtered_nodes.collect().length)
-    val filtered_edges = spark.read.json(filteredEdgeFile)
-    println(GraphFrame(filtered_nodes, filtered_edges).vertices.collect().mkString("\n"))
-    val pageranks = spark.read.json(pagerankFile)
-    val annotated_nodes = filtered_nodes.join(right = pageranks, usingColumns = Seq("id"), joinType = "full").na.fill(0.0)
-    val graph = GraphFrame(annotated_nodes, filtered_edges)
-    val reversed_graph = graph.toGraphX.reverse
-    println(reversed_graph.vertices.collect().length)
 
-    val initGraph2 = reversed_graph.mapVertices((id, row) => (row.getDouble(1), (-1, -1.0)))
+//TODO finish (not yet usable)
+/*def shortest_path_pagerank_heuristics(): Unit = {
+  //1 Create Graphframe, where each node is annotated with its pagerank
+  val filtered_nodes = spark.read.json(filteredNodeFile)
+    .select("id")
+  println(filtered_nodes.collect().length)
+  val filtered_edges = spark.read.json(filteredEdgeFile)
+  println(GraphFrame(filtered_nodes, filtered_edges).vertices.collect().mkString("\n"))
+  val pageranks = spark.read.json(pagerankFile)
+  val annotated_nodes = filtered_nodes.join(right = pageranks, usingColumns = Seq("id"), joinType = "full").na.fill(0.0)
+  val graph = GraphFrame(annotated_nodes, filtered_edges)
+  val reversed_graph = graph.toGraphX.reverse
+  println(reversed_graph.vertices.collect().length)
 
-    val initiGraph2Pregel = initGraph2.pregel((-1, -1.0), 1, EdgeDirection.In)(
-      (id, attr, msg) => (attr._1, msg),
+  val initGraph2 = reversed_graph.mapVertices((id, row) => (row.getDouble(1), (-1, -1.0)))
 
-      triplet => {
-        //send msg
-        Iterator((triplet.dstId, (triplet.srcId.toInt, triplet.srcAttr._1)))
-      },
-      (a, b) => if (a._2 > b._2) a else b
-    )
-    val annotated_graph = graph.toGraphX.reverse
+  val initiGraph2Pregel = initGraph2.pregel((-1, -1.0), 1, EdgeDirection.In)(
+    (id, attr, msg) => (attr._1, msg),
 
-    println(annotated_graph.vertices.collect().mkString("\n"))
-  }
+    triplet => {
+      //send msg
+      Iterator((triplet.dstId, (triplet.srcId.toInt, triplet.srcAttr._1)))
+    },
+    (a, b) => if (a._2 > b._2) a else b
+  )
+  val annotated_graph = graph.toGraphX.reverse
+
+  println(annotated_graph.vertices.collect().mkString("\n"))
+}
 }
 
-   */
+ */
