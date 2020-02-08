@@ -14,7 +14,9 @@ object DegreeHeuristicsTest {
       if (chunk._1 != 0) {
         println("Shortest paths of lengths " + chunk._1 + ":")
         chunk._2.foreach(v => {
+          val start = System.nanoTime()
           println(reProdPath(heuristics_shortestPath_pair(graph_50k, src_id, v._1.toInt, 3)._1, src_id, v._1.toInt).toString())
+          println("Runtime: " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
         })
       }
     })

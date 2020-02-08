@@ -470,8 +470,6 @@ object Util {
     for (nextId <- topNeig) {
 
       //Run recursive
-      println("I am on vertex: ", currentId + "My neighbor I am looking at is: ", nextId)
-
       //check if neighbors distance is greater than current distance. IF yes, update it.
       val neig = updatedGraph.vertices.filter(v => v._1 == nextId).take(1)
 
@@ -483,7 +481,6 @@ object Util {
         }
       }
     }
-    println("No path found sry: ")
     (updatedGraph, 0)
   }
 
