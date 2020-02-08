@@ -13,7 +13,7 @@ import scala.collection.mutable.ListBuffer
 
 object Util {
   //set these to the correct paths and names for your project
-  val FM1920HOME = "/home/alexander/forschungsmodul1920"
+  val FM1920HOME = ""
   val dataDir = FM1920HOME + "/data"
   val nodeDir = dataDir + "/nodes"
   val edgeDir = dataDir + "/edges"
