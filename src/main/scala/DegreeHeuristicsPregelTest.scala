@@ -14,30 +14,28 @@ object DegreeHeuristicsPregelTest {
     for (nr_neighbors <- 3 until 10) {
       var errors = new mutable.HashMap[Int, ListBuffer[Int]]
 
-      for (_ <- 0 until 5) {
-        val src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
-        val ground_truth = shortest_path_pregel(graph_100k, src_id)
-          .map(v => (v._1, v._2)).toMap
+      val src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
+      val ground_truth = shortest_path_pregel(graph_100k, src_id)
+        .map(v => (v._1, v._2)).toMap
 
-        val interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
-        println("Found " + interesting_nodes + " interesting paths (length>0)")
+      val interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
+      println("Found " + interesting_nodes.toArray.length + " interesting paths (length>0)")
 
-        val start = System.nanoTime()
-        val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
-        println("Heuristics Runtime ("+ nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
-        val prediction_map = prediction.map(v => (v._1, v._2)).toMap
+      val start = System.nanoTime()
+      val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
+      println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+      val prediction_map = prediction.map(v => (v._1, v._2)).toMap
 
-        var error = 0
-        interesting_nodes.foreach(e => {
-          val pathlength = e._2._2.length
-          val diff = pathlength - prediction_map(e._1)._2.length
-          if (!errors.contains(pathlength)) {
-            errors(pathlength) = ListBuffer(pathlength)
-          } else {
-            errors(pathlength) += diff
-          }
-        })
-      }
+      var error = 0
+      interesting_nodes.foreach(e => {
+        val pathlength = e._2._2.length
+        val diff = pathlength - prediction_map(e._1)._2.length
+        if (!errors.contains(pathlength)) {
+          errors(pathlength) = ListBuffer(pathlength)
+        } else {
+          errors(pathlength) += diff
+        }
+      })
       println("Neighborhood size: " + nr_neighbors)
       errors.map(e => (e._1, e._2.toList.groupBy(identity).mapValues(_.size))).foreach(pair => {
         println("Paths of length " + pair._1)
