@@ -14,13 +14,17 @@ object DegreeHeuristicsPregelTest {
         val ground_truth = shortest_path_pregel(graph_100k, src_id)
           .map(v => (v._1, v._2)).toMap
 
+        val interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
+        println("Found " + interesting_nodes.toArray.length + " interesting paths!")
+
         val start = System.nanoTime()
         val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
         println("Heuristics Runtime ("+ nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
         val prediction_map = prediction.map(v => (v._1, v._2)).toMap
 
         var error = 0
-        ground_truth.foreach(e => {
+        interesting_nodes.foreach(e => {
+          println("Looking at a shortest path of length " + e._2._2.length)
           val diff = e._2._2.length - prediction_map(e._1)._2.length
           println("Adding diff of " + diff + " to current error estimate")
           error += diff
