@@ -11,7 +11,7 @@ object DegreeHeuristicsPregelTest {
     val graph_100k = filteredGraph.subgraph(e => biggest_component_100k.contains(e.srcId) && biggest_component_100k.contains(e.dstId), (v, _) => biggest_component_100k.contains(v))
     val r = scala.util.Random
 
-    for (nr_neighbors <- 3 until 10) {
+    for (nr_neighbors <- 1 until 20) {
       var errors = new mutable.HashMap[Int, ListBuffer[Int]]
 
       val src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
