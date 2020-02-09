@@ -9,14 +9,14 @@ object DegreeHeuristicsPregelTest {
     val r = scala.util.Random
 
     for (nr_neighbors <- 3 until 10) {
-      for (i <- 0 until 5) {
+      for (_ <- 0 until 5) {
         val src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
         val ground_truth = shortest_path_pregel(graph_100k, src_id)
           .map(v => (v._1, v._2)).toMap
 
         val start = System.nanoTime()
-        val prediction = heuristic_sssp_pregel(graph_100k, src_id, i)
-        println("Heuristics Runtime ("+ i + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+        val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
+        println("Heuristics Runtime ("+ nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
         val prediction_map = prediction.map(v => (v._1, v._2)).toMap
 
         var error = 0
@@ -25,7 +25,7 @@ object DegreeHeuristicsPregelTest {
           println("Adding diff of " + diff + " to current error estimate")
           error += diff
         })
-        println("Total error of heuristics ("+ i + " neighbors): " + error)
+        println("Total error of heuristics ("+ nr_neighbors + " neighbors): " + error)
       }
     }
   }
