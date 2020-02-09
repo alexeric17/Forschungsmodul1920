@@ -24,12 +24,13 @@ object DegreeHeuristicsPregelTest {
       val start = System.nanoTime()
       val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
       println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
-      val prediction_map = prediction.map(v => (v._1, v._2)).toMap
+      val prediction_map = prediction.filter(n => interesting_nodes.contains(n._1)).map(v => (v._1, v._2)).toMap
+      val cleaned_prediction_map = prediction_map.filter(v => v._2._2.nonEmpty)
 
       var error = 0
-      interesting_nodes.foreach(e => {
-        val pathlength = e._2._2.length
-        val diff = pathlength - prediction_map(e._1)._2.length
+      interesting_nodes.filter(n => cleaned_prediction_map.contains(n._1)).foreach(n => {
+        val pathlength = n._2._2.length
+        val diff = math.abs(cleaned_prediction_map(n._1)._2.length - pathlength)
         if (!errors.contains(pathlength)) {
           errors(pathlength) = ListBuffer(pathlength)
         } else {
@@ -37,6 +38,7 @@ object DegreeHeuristicsPregelTest {
         }
       })
       println("Neighborhood size: " + nr_neighbors)
+      println("Nr of not found paths: " + (prediction_map.toArray.length - cleaned_prediction_map.toArray.length))
       errors.map(e => (e._1, e._2.toList.groupBy(identity).mapValues(_.size))).foreach(pair => {
         println("Paths of length " + pair._1)
         var total_nr = 0
