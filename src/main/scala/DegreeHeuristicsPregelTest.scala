@@ -20,6 +20,7 @@ object DegreeHeuristicsPregelTest {
           .map(v => (v._1, v._2)).toMap
 
         val interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
+        println("Found " + interesting_nodes + " interesting paths (length>0)")
 
         val start = System.nanoTime()
         val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
@@ -37,7 +38,7 @@ object DegreeHeuristicsPregelTest {
           }
         })
       }
-      println("Neighborhood size: " + nr_neighbors + ", Interesting paths: ")
+      println("Neighborhood size: " + nr_neighbors)
       errors.map(e => (e._1, e._2.toList.groupBy(identity).mapValues(_.size))).foreach(pair => {
         println("Paths of length " + pair._1)
         var total_nr = 0
