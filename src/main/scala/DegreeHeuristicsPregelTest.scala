@@ -39,17 +39,22 @@ object DegreeHeuristicsPregelTest {
       })
       println("Neighborhood size: " + nr_neighbors)
       println("Nr of not found paths: " + (prediction_map.toArray.length - cleaned_prediction_map.toArray.length))
+      var total_nr = 0
+      var total_error = 0
       errors.map(e => (e._1, e._2.toList.groupBy(identity).mapValues(_.size))).foreach(pair => {
         println("Paths of length " + pair._1)
-        var total_nr = 0
-        var total_error = 0
+        var nr = 0
+        var error = 0
         pair._2.foreach(v => {
-          println("Difference " + v._1 + ": " + v._2 + " occurences")
-          total_nr += v._2
-          total_error = v._2 * v._1
+          println(s"Difference ${v._1}: ${v._2} occurrences")
+          nr += v._2
+          error += v._2 * v._1
         })
-        println("Average error: " + total_error.toFloat / total_nr)
+        println(s"Average error on paths of length ${pair._1}: ${error.toFloat / nr}")
+        total_nr += nr
+        total_error += error
       })
+      println(s"Average error for neighborhood size $nr_neighbors: ${total_error.toFloat / total_nr}")
     }
   }
 }
