@@ -47,8 +47,8 @@ object ComputeDegreeCore {
       })
     })
     println(s"Percentage of found paths: ${nr_found_paths.toDouble / nr_total_paths}")
-    val core_edges = result.filter(v => core_node_ids.contains(v._1._1) && core_node_ids.contains(v._1._2))
-    println(s"Percentage of found paths between core: ${core_edges.toArray.length.toDouble / 10000}")
-    result.toSeq.toDF("pair", "shortest_path").coalesce(1).write.json(dataDir + "/core_degree")
+    val filtered_result = result.filter(v => core_node_ids.contains(v._1._1) && core_node_ids.contains(v._1._2))
+    println(s"Percentage of found paths between core: ${filtered_result.toArray.length.toDouble / 10000}")
+    filtered_result.toSeq.toDF("pair", "shortest_path").coalesce(1).write.json(dataDir + "/core_degree")
   }
 }
