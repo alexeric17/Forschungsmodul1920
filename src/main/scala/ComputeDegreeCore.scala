@@ -13,22 +13,19 @@ object ComputeDegreeCore {
     var nr_found_paths = 0
     var nr_total_paths = 0
 
-    println(s"[${Calendar.getInstance().getTime}] Computing In Degrees for Degree Heuristics Core")
-
-    val g_degIn = filtered_graph.outerJoinVertices(filtered_graph.inDegrees)((_, _, deg) => deg.getOrElse(0))
-      .vertices.collectAsMap()
+    val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => -c.size)
+    val biggest_component = connected_components(0).toSet
 
     println(s"[${Calendar.getInstance().getTime}] Computing Out Degrees for Degree Heuristics Core")
 
     val g_degOut = filtered_graph.outerJoinVertices(filtered_graph.outDegrees)((_, _, deg) => deg.getOrElse(0))
       .vertices
 
-    val core_nodes = g_degOut
-      .filter(v => g_degIn(v._1) != 0)
+    val core_nodes = g_degOut.filter(v => biggest_component.contains(v._1))
       .sortBy(v => -v._2).take(100)
 
     println(s"Computing the core on graph of size ${filtered_graph.vertices.collect().length} for the following vertices:")
-    core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2} (In-degree: ${g_degIn(v._1)})"))
+    core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2})"))
 
     core_nodes.foreach(dst => {
       val start = System.nanoTime()
