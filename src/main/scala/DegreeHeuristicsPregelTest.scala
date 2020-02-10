@@ -30,22 +30,20 @@ object DegreeHeuristicsPregelTest {
 
       interesting_nodes.groupBy(v => v._2._2.length).foreach(group => {
         val pathlength = group._1
-        val sample = group._2.take(10)
+        val sample = group._2.take(1).head._1.toInt
         var error = 0
         not_found_paths = 0
-        for (i <- sample.indices) {
-          val start = System.nanoTime()
-          val prediction = heuristic_sssp_pregel(graph_100k, src_id, sample(i)._1.toInt, nr_neighbors)
-          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
-          if (prediction.isEmpty) {
-            not_found_paths += 1
+        val start = System.nanoTime()
+        val prediction = heuristic_sssp_pregel(graph_100k, src_id, sample, nr_neighbors)
+        println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+        if (prediction.isEmpty) {
+          not_found_paths += 1
+        } else {
+          val diff = math.abs(pathlength - prediction.length)
+          if (!errors.contains(pathlength)) {
+            errors(pathlength) = ListBuffer(pathlength)
           } else {
-            val diff = math.abs(pathlength - prediction.length)
-            if (!errors.contains(pathlength)) {
-              errors(pathlength) = ListBuffer(pathlength)
-            } else {
-              errors(pathlength) += diff
-            }
+            errors(pathlength) += diff
           }
         }
       })
