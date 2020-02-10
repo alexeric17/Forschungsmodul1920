@@ -25,22 +25,27 @@ object ComputeDegreeCore {
     val core_nodes = g_degOut
       .filter(v => biggest_component.contains(v._1))
       .filter(v => g_degIn(v._1) > 0)
-      .sortBy(v => -v._2).take(100)
+      .sortBy(v => -v._2).collect()
 
     println(s"Computing the core on graph of size ${filtered_graph.vertices.collect().length} for the following vertices:")
     core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2})"))
 
     val core_node_ids = core_nodes.map(n => n._1)
 
+    var iteration = 0
     core_node_ids.foreach(dst => {
+      iteration += 1
       val start = System.nanoTime()
       val paths = shortest_path_pregel(filtered_graph, dst.toInt)
       println(s"Done computing after ${(System.nanoTime() - start) / 1000 / 1000} ms")
       paths
         .filter(v => core_node_ids.contains(v._1))
         .foreach(v => result.append((v._2._2.head, v._2._2.last, v._2._2)))
+
+      if (iteration == 100 || (iteration > 100 && iteration % 10 == 0)) {
+        println(s"Percentage of found paths between core after $iteration iterations: ${result.length.toDouble / 10000}")
+        result.toDF("src", "dst", "path").coalesce(1).write.json(dataDir + s"/core_degrees/$iteration")
+      }
     })
-    println(s"Percentage of found paths between core: ${result.length.toDouble / 10000}")
-    result.toDF("src", "dst", "path").coalesce(1).write.json(dataDir + "/core_degree")
   }
 }
