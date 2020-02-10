@@ -21,11 +21,13 @@ object ComputeDegreeCore {
       .filter(v => g_degIn(v._1) != 0)
       .sortBy(v => -v._2).take(100)
 
-    core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2}"))
+    println("Computing the core for the following vertices:")
+    core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2} (In-degree: ${g_degIn(v._1)}"))
 
+    val start = System.nanoTime()
     val result = ShortestPaths.run(filtered_graph, core_nodes.map(v => v._1))
+    println(s"Done computing after ${(System.nanoTime() - start) / 1000 / 1000} ms")
 
     spark.createDataFrame(result.vertices.distinct()).toDF().coalesce(1).write.json(FM1920HOME + "/data/core_degree")
-
   }
 }
