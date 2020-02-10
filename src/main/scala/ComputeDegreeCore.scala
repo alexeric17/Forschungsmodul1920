@@ -32,19 +32,23 @@ object ComputeDegreeCore {
     println(s"Computing the core on graph of size ${filtered_graph.vertices.collect().length} for the following vertices:")
     core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2})"))
 
-    core_nodes.foreach(dst => {
+    val core_node_ids = core_nodes.map(n => n._1)
+
+    core_node_ids.foreach(dst => {
       val start = System.nanoTime()
-      val paths = shortest_path_pregel(filtered_graph, dst._1.toInt)
+      val paths = shortest_path_pregel(filtered_graph, dst.toInt)
       println(s"Done computing after ${(System.nanoTime() - start) / 1000 / 1000} ms")
       paths.foreach(src => {
         nr_total_paths += 1
         if (src._2._2.nonEmpty) {
           nr_found_paths += 1
         }
-        result((src._1, dst._1)) = src._2._2
+        result((src._1, dst)) = src._2._2
       })
     })
     println(s"Percentage of found paths: ${nr_found_paths.toDouble / nr_total_paths}")
+    val core_edges = result.filter(v => core_node_ids.contains(v._1._1) && core_node_ids.contains(v._1._2))
+    println(s"Percentage of found paths between core: ${core_edges.toArray.length.toDouble / 10000}")
     result.toSeq.toDF("pair", "shortest_path").coalesce(1).write.json(dataDir + "/core_degree")
   }
 }
