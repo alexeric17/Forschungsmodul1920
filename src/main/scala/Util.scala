@@ -300,7 +300,7 @@ object Util {
   def filter_from_nodes_using_list(nodes: DataFrame): DataFrame = {
     //Specificy where to save file.
     val filterWords = List("User:", "Help:", "Category talk:", "Template talk:", "Help talk:", "Wikipedia:", "Wikipedia talk:",
-      "MediaWiki:", "MediaWiki talk:", "MediaWiki", "Template:", "User talk:", "Talk:", "Module:")
+      "MediaWiki:", "MediaWiki talk:", "MediaWiki", "Template:", "User talk:", "Talk:", "Module:", "List of ")
 
     def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
 
@@ -312,7 +312,7 @@ object Util {
   def filter_from_edges_using_list(nodes: DataFrame, edge: DataFrame): DataFrame = {
 
     val filterWords = List("User:", "Help:", "Category talk:", "Template talk:", "Help talk:", "Wikipedia:", "Wikipedia talk:",
-      "MediaWiki:", "MediaWiki talk:", "MediaWiki", "Template:", "User talk:", "Talk:", "Module:")
+      "MediaWiki:", "MediaWiki talk:", "MediaWiki", "Template:", "User talk:", "Talk:", "Module:", "List of ")
 
     def containsUdf = udf((strCol: String) => filterWords.exists(strCol.contains))
 
