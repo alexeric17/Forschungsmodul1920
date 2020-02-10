@@ -1,4 +1,5 @@
 import Util._
+import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -13,14 +14,20 @@ object DegreeHeuristicsPregelTest {
 
     for (nr_neighbors <- 1 until 20) {
       var errors = new mutable.HashMap[Int, ListBuffer[Int]]
+      var interesting_nodes = Map[VertexId, (Double, List[VertexId])]()
+      var nr_interesting_nodes = 0
+      var src_id = -1
 
-      val src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
-      println(s"Looking at node with id $src_id")
-      val ground_truth = shortest_path_pregel(graph_100k, src_id)
-        .map(v => (v._1, v._2)).toMap
+      //Search for a node that has a reasonable connection
+      do {
+        src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
+        val ground_truth = shortest_path_pregel(graph_100k, src_id)
+          .map(v => (v._1, v._2)).toMap
 
-      val interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
-      println("Found " + interesting_nodes.toArray.length + " interesting paths (length>0)")
+        interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
+        nr_interesting_nodes = interesting_nodes.toArray.length
+      } while (nr_interesting_nodes < 1000)
+      println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id")
 
       val start = System.nanoTime()
       val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
