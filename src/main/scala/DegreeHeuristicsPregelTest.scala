@@ -15,6 +15,7 @@ object DegreeHeuristicsPregelTest {
       var errors = new mutable.HashMap[Int, ListBuffer[Int]]
 
       val src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
+      println(s"Looking at node with id $src_id")
       val ground_truth = shortest_path_pregel(graph_100k, src_id)
         .map(v => (v._1, v._2)).toMap
 
