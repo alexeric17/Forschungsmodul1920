@@ -39,7 +39,7 @@ object ComputeDegreeCore {
       val paths = shortest_path_pregel(filtered_graph, dst.toInt)
       println(s"Done computing after ${(System.nanoTime() - start) / 1000 / 1000} ms")
       paths
-        .filter(v => core_node_ids.contains(v._1))
+        .filter(v => core_node_ids.contains(v._1) && v._2._2.nonEmpty)
         .foreach(v => result.append((v._2._2.head, v._2._2.last, v._2._2)))
 
       if (iteration == 100 || (iteration > 100 && iteration % 10 == 0)) {
