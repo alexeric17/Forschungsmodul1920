@@ -470,7 +470,7 @@ object Util {
     for (nextId <- topNeig) {
 
       //Run recursive
-      println("(" +currentId + "," + nextId + ")")
+      println("(" + currentId + "," + nextId + ")")
 
       //check if neighbors distance is greater than current distance. IF yes, update it.
       val neig = updatedGraph.vertices.filter(v => v._1 == nextId).take(1)
@@ -486,30 +486,103 @@ object Util {
     (updatedGraph, 0)
   }
 
-  def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, n: Int): Array[(VertexId, (Double, List[VertexId]))] = {
+  def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int): List[VertexId] = {
     //n is how many of highest outDeg neighbours we take.
     //Initiallize the graph.
-    val edges = graph.edges.collect()
+    val annotated_graph = degreeHeurstics(graph)
+    val edges = annotated_graph.edges.collect()
+    val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
+    var shortestPath = ListBuffer[VertexId]()
     val initGraph: Graph[(Double, List[VertexId]), Double] =
-      graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
-
+      annotated_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
     val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
       (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
       triplet => {
-
-        val neighbours = edges.filter(e => e.srcId == triplet.srcId).sortBy(e => e.attr).map(e => e.dstId).toList.take(n)
-        if (neighbours.contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - triplet.attr))) {
-          Iterator((triplet.dstId, (triplet.srcAttr._1 + triplet.attr, triplet.srcAttr._2 :+ triplet.dstId)))
+        if (shortestPath.nonEmpty) {
+          Iterator.empty
+        } else if (triplet.dstId == dst_id) {
+          triplet.srcAttr._2.foreach(v => shortestPath.append(v))
+          shortestPath.append(dst_id)
+          Iterator.empty
+          //Look at top n neighbours, see if any of them has not been visited yet
+        } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
         } else {
           Iterator.empty
         }
       },
       (a, b) => if (a._1 < b._1) a else b)
 
-    sssp.vertices.collect()
+    shortestPath.toList
+  }
 
+  def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[VertexId]): List[VertexId] = {
+    //n is how many of highest outDeg neighbours we take.
+    //Initiallize the graph.
+    val annotated_graph = degreeHeurstics(graph)
+    val edges = annotated_graph.edges.collect()
+    val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
+    var shortestPath = ListBuffer[VertexId]()
+    var src2core = ListBuffer[VertexId]()
+    var dst2core = ListBuffer[VertexId]()
+
+    val initGraph: Graph[(Double, List[VertexId]), Double] =
+      annotated_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
+
+    val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
+      (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
+
+      triplet => {
+        if (shortestPath.nonEmpty) {
+          Iterator.empty
+        } else if (triplet.dstId == dst_id) {
+          triplet.srcAttr._2.foreach(v => shortestPath.append(v))
+          shortestPath.append(dst_id)
+          Iterator.empty
+        } else if (core_nodes.contains(triplet.dstId)) {
+          triplet.srcAttr._2.foreach(v => src2core += v)
+          src2core += triplet.dstId
+          Iterator.empty
+          //Look at top n neighbours, see if any of them has not been visited yet
+        } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
+        } else {
+          Iterator.empty
+        }
+      },
+      (a, b) => if (a._1 < b._1) a else b)
+
+    if (shortestPath.nonEmpty) {
+      return shortestPath.toList
+    }
+
+    val reversed_graph = annotated_graph.reverse
+
+    val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
+      reversed_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
+
+    val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
+      (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
+
+      triplet => {
+        if (core_nodes.contains(triplet.dstId)) {
+          triplet.srcAttr._2.foreach(v => dst2core += v)
+          dst2core += triplet.dstId
+          dst2core = dst2core.reverse
+          Iterator.empty
+          //Look at top n neighbours, see if any of them has not been visited yet
+        } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
+        } else {
+          Iterator.empty
+        }
+      },
+      (a, b) => if (a._1 < b._1) a else b)
+
+    //Look in precomputed paths for core node pair and return heuristic path
+    List() //TODO
   }
 }
 
