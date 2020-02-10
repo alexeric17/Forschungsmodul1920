@@ -36,6 +36,6 @@ object ComputeDegreeCore {
         result((src._1, dst._1)) = src._2._2
       })
     })
-    result.toSeq.toDF("pair", "shortest_path").write.json(dataDir + "/core_degree")
+    result.toSeq.toDF("pair", "shortest_path").coalesce(1).write.json(dataDir + "/core_degree")
   }
 }
