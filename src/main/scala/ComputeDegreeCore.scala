@@ -16,12 +16,17 @@ object ComputeDegreeCore {
     val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => -c.size)
     val biggest_component = connected_components(0).toSet
 
+    val g_degIn = filtered_graph.outerJoinVertices(filtered_graph.inDegrees)((_, _, deg) => deg.getOrElse(0))
+      .vertices.collect().toMap
+
     println(s"[${Calendar.getInstance().getTime}] Computing Out Degrees for Degree Heuristics Core")
 
     val g_degOut = filtered_graph.outerJoinVertices(filtered_graph.outDegrees)((_, _, deg) => deg.getOrElse(0))
       .vertices
 
-    val core_nodes = g_degOut.filter(v => biggest_component.contains(v._1))
+    val core_nodes = g_degOut
+      .filter(v => biggest_component.contains(v._1))
+      .filter(v => g_degIn(v._1) > 0)
       .sortBy(v => -v._2).take(100)
 
     println(s"Computing the core on graph of size ${filtered_graph.vertices.collect().length} for the following vertices:")
