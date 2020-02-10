@@ -14,39 +14,44 @@ object DegreeHeuristicsPregelTest {
 
     for (nr_neighbors <- 1 until 20) {
       var errors = new mutable.HashMap[Int, ListBuffer[Int]]
-      var interesting_nodes = Map[VertexId, (Double, List[VertexId])]()
+      var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
       var nr_interesting_nodes = 0
       var src_id = -1
-
+      var not_found_paths = 0
       //Search for a node that has a reasonable connection
       do {
         src_id = graph_100k.vertices.collect()(math.abs(r.nextInt() % 100000))._1.toInt //random node
         val ground_truth = shortest_path_pregel(graph_100k, src_id)
-          .map(v => (v._1, v._2)).toMap
 
-        interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty)
+        interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty).map(v => (v._1, v._2)).toList
         nr_interesting_nodes = interesting_nodes.toArray.length
       } while (nr_interesting_nodes < 1000)
       println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id")
 
-      val start = System.nanoTime()
-      val prediction = heuristic_sssp_pregel(graph_100k, src_id, nr_neighbors)
-      println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
-      val prediction_map = prediction.filter(n => interesting_nodes.contains(n._1)).map(v => (v._1, v._2)).toMap
-      val cleaned_prediction_map = prediction_map.filter(v => v._2._2.nonEmpty)
-
-      var error = 0
-      interesting_nodes.filter(n => cleaned_prediction_map.contains(n._1)).foreach(n => {
-        val pathlength = n._2._2.length
-        val diff = math.abs(cleaned_prediction_map(n._1)._2.length - pathlength)
-        if (!errors.contains(pathlength)) {
-          errors(pathlength) = ListBuffer(pathlength)
-        } else {
-          errors(pathlength) += diff
+      interesting_nodes.groupBy(v => v._2._2.length).foreach(group => {
+        val pathlength = group._1
+        val sample = group._2.take(10)
+        var error = 0
+        not_found_paths = 0
+        for (i <- sample.indices) {
+          val start = System.nanoTime()
+          val prediction = heuristic_sssp_pregel(graph_100k, src_id, sample(i)._1.toInt, nr_neighbors)
+          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+          if (prediction.isEmpty) {
+            not_found_paths += 1
+          } else {
+            val diff = math.abs(pathlength - prediction.length)
+            if (!errors.contains(pathlength)) {
+              errors(pathlength) = ListBuffer(pathlength)
+            } else {
+              errors(pathlength) += diff
+            }
+          }
         }
       })
+
       println("Neighborhood size: " + nr_neighbors)
-      println("Nr of not found paths: " + (prediction_map.toArray.length - cleaned_prediction_map.toArray.length))
+      println("Nr of not found paths: " + not_found_paths)
       var total_nr = 0
       var total_error = 0
       errors.map(e => (e._1, e._2.toList.groupBy(identity).mapValues(_.size))).foreach(pair => {
