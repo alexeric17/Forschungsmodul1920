@@ -1,17 +1,15 @@
 import java.util.Calendar
 
 import Util._
+import Util.spark.implicits._
 import org.apache.spark.graphx.VertexId
 
-import scala.collection.mutable
-import spark.implicits._
+import scala.collection.mutable.ListBuffer
 
 object ComputeDegreeCore {
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
-    val result = mutable.Map[(VertexId, VertexId), List[VertexId]]()
-    var nr_found_paths = 0
-    var nr_total_paths = 0
+    var result = ListBuffer[(VertexId, VertexId, List[VertexId])]()
 
     val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => -c.size)
     val biggest_component = connected_components(0).toSet
@@ -38,17 +36,11 @@ object ComputeDegreeCore {
       val start = System.nanoTime()
       val paths = shortest_path_pregel(filtered_graph, dst.toInt)
       println(s"Done computing after ${(System.nanoTime() - start) / 1000 / 1000} ms")
-      paths.foreach(src => {
-        nr_total_paths += 1
-        if (src._2._2.nonEmpty) {
-          nr_found_paths += 1
-        }
-        result((src._1, dst)) = src._2._2
-      })
+      paths
+        .filter(v => core_node_ids.contains(v._1))
+        .foreach(v => result.append((v._2._2.head, v._2._2.last, v._2._2)))
     })
-    println(s"Percentage of found paths: ${nr_found_paths.toDouble / nr_total_paths}")
-    val filtered_result = result.filter(v => core_node_ids.contains(v._1._1) && core_node_ids.contains(v._1._2))
-    println(s"Percentage of found paths between core: ${filtered_result.toArray.length.toDouble / 10000}")
-    filtered_result.toSeq.toDF("pair", "shortest_path").coalesce(1).write.json(dataDir + "/core_degree")
+    println(s"Percentage of found paths between core: ${result.length.toDouble / 10000}")
+    result.toDF("src", "dst", "path").coalesce(1).write.json(dataDir + "/core_degree")
   }
 }
