@@ -320,7 +320,7 @@ object Util {
 
     val usersList = users.select("id").collect().map(_ (0)).toList
 
-    val newEdges = edge.filter((!$"src".isin(usersList: _*)) || (!$"dst".isin(usersList: _*)))
+    val newEdges = edge.filter((!$"src".isin(usersList: _*)) && (!$"dst".isin(usersList: _*)))
 
     newEdges
   }
