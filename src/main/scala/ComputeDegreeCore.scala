@@ -25,7 +25,7 @@ object ComputeDegreeCore {
     val core_nodes = g_degOut
       .filter(v => biggest_component.contains(v._1))
       .filter(v => g_degIn(v._1) > 0)
-      .sortBy(v => -v._2).collect()
+      .sortBy(v => -v._2).take(1000)
 
     println(s"Computing the core on graph of size ${filtered_graph.vertices.collect().length} for the following vertices:")
     core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2})"))
