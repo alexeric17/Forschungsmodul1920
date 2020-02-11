@@ -629,8 +629,7 @@ object Util {
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
       .rdd
-      .first()
-      .toSeq.asInstanceOf[Seq[Long]]
+      .first().toSeq.toList.map(x => x.asInstanceOf[Long])
 
     val result = src2core ++ core_connection ++ dst2core
 
