@@ -629,7 +629,7 @@ object Util {
       .toDF()
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
-      .map(r => r.asInstanceOf[List[VertexId]])
+      .map(r => r.toSeq.toList)
       .collect()(0)
 
     val result = src2core ++ core_connection ++ dst2core
