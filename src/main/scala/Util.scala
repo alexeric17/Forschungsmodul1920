@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 
 object Util {
   //set these to the correct paths and names for your project
-  val FM1920HOME = ""
+  val FM1920HOME = "/home/schererc/Schreibtisch/WS1920/Forschungsmodul Datenbanken/forschungsmodul1920"
   val dataDir = FM1920HOME + "/data"
   val nodeDir = dataDir + "/nodes"
   val edgeDir = dataDir + "/edges"
@@ -628,14 +628,13 @@ object Util {
       .toDF()
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
-      .rdd
-      .first().toSeq.toList.map(x => x.asInstanceOf[Long])
+      .map(x => x.getList(0))
+      .map(x => x.asInstanceOf[Long])
+      .collectAsList()
 
-    val result = src2core ++ core_connection ++ dst2core
+    println(core_connection)
 
-    result.foreach(e => println(e.toString))
-
-    result.toList.map(v => v.toString.toLong)
+    List()
   }
 }
 
