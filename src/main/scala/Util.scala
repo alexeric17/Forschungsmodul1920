@@ -624,9 +624,9 @@ object Util {
     println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
 
     val core_connection = core_paths
-      .toDF("src_id", "dst_id", "shortest_path")
-      .select("shortest_path")
-      .where(s"src_id=$src_core and dst_id=$dst_core")
+      .toDF()
+      .select("path")
+      .where(s"src=$src_core and dst=$dst_core")
       .map(r => r.asInstanceOf[List[VertexId]])
       .collect()(0)
 
