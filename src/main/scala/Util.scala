@@ -518,19 +518,19 @@ object Util {
     shortestPath.toList
   }
 
-  def get_core_node_ids(): List[VertexId] = {
+  def get_core_node_ids(): List[Int] = {
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
 
     val core_connection = core_paths
       .toDF("src_id", "dst_id", "shortest_path")
       .select("src_id")
-      .map(r => r.asInstanceOf[VertexId])
+      .map(r => r.getInt(0))
       .collect()
 
     core_connection.toList
   }
 
-  def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[VertexId]): List[VertexId] = {
+  def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
     //n is how many of highest outDeg neighbours we take.
     //Initiallize the graph.
     val annotated_graph = degreeHeurstics(graph)
