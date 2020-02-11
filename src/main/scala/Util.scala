@@ -543,60 +543,85 @@ object Util {
     val initGraph: Graph[(Double, List[VertexId]), Double] =
       annotated_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
-    val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
-      (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
+    println(s"[${Calendar.getInstance().getTime}] Starting Computation of heurstic shortest path from $src_id to $dst_id")
 
-      triplet => {
-        if (shortestPath.nonEmpty) {
-          Iterator.empty
-        } else if (triplet.dstId == dst_id) {
-          triplet.srcAttr._2.foreach(v => shortestPath.append(v))
-          shortestPath.append(dst_id)
-          Iterator.empty
-        } else if (core_nodes.contains(triplet.dstId)) {
-          triplet.srcAttr._2.foreach(v => src2core += v)
-          src2core += triplet.dstId
-          Iterator.empty
-          //Look at top n neighbours, see if any of them has not been visited yet
-        } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
-          Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
-        } else {
-          Iterator.empty
-        }
-      },
-      (a, b) => if (a._1 < b._1) a else b)
+    if (!core_nodes.contains(src_id)) {
+      println(s"[${Calendar.getInstance().getTime}] Computing first half of heurstics")
+      val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
+        (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
-    if (shortestPath.nonEmpty) {
-      return shortestPath.toList
+        triplet => {
+          //Shortest Path found
+          if (shortestPath.nonEmpty) {
+            Iterator.empty
+            //Destination in my neighborhood
+          } else if (triplet.dstId == dst_id) {
+            println(s"[${Calendar.getInstance().getTime}] Found destination in neighborhood of ${triplet.srcId}")
+            triplet.srcAttr._2.foreach(v => shortestPath.append(v))
+            shortestPath.append(dst_id)
+            Iterator.empty
+            //Core Node in my neighborhood
+          } else if (core_nodes.contains(triplet.dstId)) {
+            println(s"[${Calendar.getInstance().getTime}] Found src_core in neighborhood of ${triplet.srcId}")
+            triplet.srcAttr._2.foreach(v => src2core += v)
+            src2core += triplet.dstId
+            Iterator.empty
+            //Look at top n neighbours, see if any of them has not been visited yet
+          } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+            println(s"[${Calendar.getInstance().getTime}] Nothing found - looking at neighbours")
+            Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
+          } else {
+            Iterator.empty
+          }
+        },
+        (a, b) => if (a._1 < b._1) a else b)
+
+      if (shortestPath.nonEmpty) {
+        return shortestPath.toList
+      }
+    } else {
+      println(s"[${Calendar.getInstance().getTime}] Skipped first half of heurstics - $src_id is already in the core")
+      src2core += src_id
     }
 
-    val reversed_graph = annotated_graph.reverse
+    if (!core_nodes.contains(dst_id)) {
+      println(s"[${Calendar.getInstance().getTime}] Computing second half of heurstics")
 
-    val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
-      reversed_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
+      val reversed_graph = annotated_graph.reverse
 
-    val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
-      (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
+      val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
+        reversed_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
-      triplet => {
-        if (core_nodes.contains(triplet.dstId)) {
-          triplet.srcAttr._2.foreach(v => dst2core += v)
-          dst2core += triplet.dstId
-          dst2core = dst2core.reverse
-          Iterator.empty
-          //Look at top n neighbours, see if any of them has not been visited yet
-        } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
-          Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
-        } else {
-          Iterator.empty
-        }
-      },
-      (a, b) => if (a._1 < b._1) a else b)
+      val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
+        (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
+
+        triplet => {
+          if (core_nodes.contains(triplet.dstId)) {
+            println(s"[${Calendar.getInstance().getTime}] Found dst_core in neighborhood of ${triplet.srcId}")
+            triplet.srcAttr._2.foreach(v => dst2core += v)
+            dst2core += triplet.dstId
+            dst2core = dst2core.reverse
+            Iterator.empty
+            //Look at top n neighbours, see if any of them has not been visited yet
+          } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+            println(s"[${Calendar.getInstance().getTime}] Nothing found - looking at neighbours")
+            Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
+          } else {
+            Iterator.empty
+          }
+        },
+        (a, b) => if (a._1 < b._1) a else b)
+    } else {
+      println(s"[${Calendar.getInstance().getTime}] Skipped second half of heurstics - $dst_id is already in the core")
+      dst2core += dst_id
+    }
 
     //Look in precomputed paths for core node pair and return heuristic path
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
     val dst_core = dst2core.head
+
+    println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
 
     val core_connection = core_paths
       .toDF("src_id", "dst_id", "shortest_path")
