@@ -3,7 +3,6 @@ import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConversions._
 
 object DegreeHeuristicsPregelTest {
   def main(args: Array[String]): Unit = {
@@ -11,42 +10,43 @@ object DegreeHeuristicsPregelTest {
     val size = filtered_graph.vertices.collect().length
     val r = scala.util.Random
 
+    var errors = new mutable.HashMap[Int, ListBuffer[Int]]
+    var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
+    var nr_interesting_nodes = 0
+    var src_id = -1
+    var not_found_paths = 0
+    val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
+    val core_ids = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
+
+    //Search for a node that has a reasonable connection
+    do {
+      src_id = filtered_graph.vertices.collect()(math.abs(r.nextInt() % size))._1.toInt //random node
+      val ground_truth = shortest_path_pregel(filtered_graph, src_id)
+
+      interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty).map(v => (v._1, v._2)).toList
+      nr_interesting_nodes = interesting_nodes.toArray.length
+    } while (nr_interesting_nodes < 1000)
+
+    println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id")
+
     for (nr_neighbors <- 1 until 20) {
-      var errors = new mutable.HashMap[Int, ListBuffer[Int]]
-      var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
-      var nr_interesting_nodes = 0
-      var src_id = -1
-      var not_found_paths = 0
-      val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
-      val core_ids = core.select("src").collectAsList().toList.map(_.toString().toInt)
-
-
-      //Search for a node that has a reasonable connection
-      do {
-        src_id = filtered_graph.vertices.collect()(math.abs(r.nextInt() % size))._1.toInt //random node
-        val ground_truth = shortest_path_pregel(filtered_graph, src_id)
-
-        interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty).map(v => (v._1, v._2)).toList
-        nr_interesting_nodes = interesting_nodes.toArray.length
-      } while (nr_interesting_nodes < 1000)
-
-      println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id")
-
       interesting_nodes.groupBy(v => v._2._2.length).foreach(group => {
         val pathlength = group._1
-        val sample = group._2.take(1).head._1.toInt
+        val sample = group._2.take(10)
         not_found_paths = 0
-        val start = System.nanoTime()
-        val prediction = heuristic_sssp_pregel(filtered_graph, src_id, sample, nr_neighbors, core_ids)
-        println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
-        if (prediction.isEmpty) {
-          not_found_paths += 1
-        } else {
-          val diff = math.abs(pathlength - prediction.length)
-          if (!errors.contains(pathlength)) {
-            errors(pathlength) = ListBuffer(pathlength)
+        for (i <- 1 until 10) {
+          val start = System.nanoTime()
+          val prediction = heuristic_sssp_pregel(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
+          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+          if (prediction.isEmpty) {
+            not_found_paths += 1
           } else {
-            errors(pathlength) += diff
+            val diff = math.abs(pathlength - prediction.length)
+            if (!errors.contains(pathlength)) {
+              errors(pathlength) = ListBuffer(pathlength)
+            } else {
+              errors(pathlength) += diff
+            }
           }
         }
       })
