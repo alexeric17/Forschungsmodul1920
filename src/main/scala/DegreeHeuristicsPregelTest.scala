@@ -27,10 +27,14 @@ object DegreeHeuristicsPregelTest {
       nr_interesting_nodes = interesting_nodes.toArray.length
     } while (nr_interesting_nodes < 1000)
 
-    println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id")
+    val interesting_node_groups = interesting_nodes.groupBy(v => v._2._2.length)
+    val total_pathlength = interesting_nodes.reduce(_._2._2.length + _._2._2.length)
+    println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id with the following pathlength nrs:")
+    interesting_node_groups.foreach(g => println(s"Length ${g._1}: ${g._2.length} Occurences"))
+    println(s"Average Pathlength: ${total_pathlength.toDouble / nr_interesting_nodes}")
 
     for (nr_neighbors <- 20 to 1 by -1) {
-      interesting_nodes.groupBy(v => v._2._2.length).foreach(group => {
+      interesting_node_groups.foreach(group => {
         val pathlength = group._1
         val sample = group._2.take(10)
         not_found_paths = 0
