@@ -628,7 +628,7 @@ object Util {
       .toDF()
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
-      .map(r => r.toSeq.toList.map(_.toString.toLong))
+      .map(r => r.toSeq.toList.map(v => v.toString.toLong))
       .collect()(0)
 
     val result = src2core ++ core_connection ++ dst2core
