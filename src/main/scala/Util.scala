@@ -634,6 +634,8 @@ object Util {
 
     val result = src2core ++ core_connection ++ dst2core
 
+    result.foreach(e => println(e.toString))
+
     result.toList.map(v => v.toString.toLong)
   }
 }
