@@ -522,8 +522,9 @@ object Util {
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
 
     val core_connection = core_paths
-      .toDF("src_id", "dst_id", "shortest_path")
-      .select("src_id")
+      .toDF()
+      .select("src")
+      .distinct()
       .map(r => r.getLong(0).toInt)
       .collect()
 
@@ -618,6 +619,7 @@ object Util {
 
     //Look in precomputed paths for core node pair and return heuristic path
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+    core_paths.printSchema()
     val src_core = src2core.last
     val dst_core = dst2core.head
 
