@@ -616,7 +616,12 @@ object Util {
       dst2core += dst_id
     }
 
+    if (src2core.isEmpty || dst2core.isEmpty) {
+      //No heuristic path found
+      return List()
+    }
     //Look in precomputed paths for core node pair and return heuristic path
+
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
     val dst_core = dst2core.head
