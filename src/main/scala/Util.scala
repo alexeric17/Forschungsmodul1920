@@ -553,8 +553,8 @@ object Util {
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
         triplet => {
-          //Shortest Path found
-          if (shortestPath.nonEmpty) {
+          //Shortest Path or Core Node found
+          if (shortestPath.nonEmpty || src2core.nonEmpty) {
             Iterator.empty
             //Destination in my neighborhood
           } else if (triplet.dstId == dst_id) {
@@ -595,7 +595,10 @@ object Util {
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
         triplet => {
-          if (core_nodes.contains(triplet.dstId)) {
+          if (dst2core.nonEmpty) {
+            //Core Node found
+            Iterator.empty
+          } else if (core_nodes.contains(triplet.dstId)) {
             triplet.srcAttr._2.foreach(v => dst2core += v)
             dst2core += triplet.dstId
             dst2core = dst2core.reverse
