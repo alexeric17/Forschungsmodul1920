@@ -518,6 +518,18 @@ object Util {
     shortestPath.toList
   }
 
+  def get_core_node_ids(): List[VertexId] = {
+    val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+
+    val core_connection = core_paths
+      .toDF("src_id", "dst_id", "shortest_path")
+      .select("src_id")
+      .map(r => r.asInstanceOf[VertexId])
+      .collect()
+
+    core_connection.toList
+  }
+
   def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[VertexId]): List[VertexId] = {
     //n is how many of highest outDeg neighbours we take.
     //Initiallize the graph.
@@ -582,7 +594,20 @@ object Util {
       (a, b) => if (a._1 < b._1) a else b)
 
     //Look in precomputed paths for core node pair and return heuristic path
-    List() //TODO
+    val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+    val src_core = src2core.last
+    val dst_core = dst2core.head
+
+    val core_connection = core_paths
+      .toDF("src_id", "dst_id", "shortest_path")
+      .select("shortest_path")
+      .where(s"src_id=$src_core and dst_id=$dst_core")
+      .map(r => r.asInstanceOf[List[VertexId]])
+      .collect()(0)
+
+    val result = src2core ++ core_connection ++ dst2core
+
+    result.toList
   }
 }
 
