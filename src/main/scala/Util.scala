@@ -628,9 +628,12 @@ object Util {
       .toDF()
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
-      .map(x => x.getList(0))
+      .rdd
+      .map(x => x(0))
       .map(x => x.asInstanceOf[Long])
-      .collectAsList()
+      .take(1)
+      .toList
+
 
     println(core_connection)
 
