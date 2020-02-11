@@ -29,7 +29,7 @@ object DegreeHeuristicsPregelTest {
 
     println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id")
 
-    for (nr_neighbors <- 1 until 20) {
+    for (nr_neighbors <- 20 to 1 by -1) {
       interesting_nodes.groupBy(v => v._2._2.length).foreach(group => {
         val pathlength = group._1
         val sample = group._2.take(10)

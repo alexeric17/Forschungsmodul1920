@@ -558,19 +558,16 @@ object Util {
             Iterator.empty
             //Destination in my neighborhood
           } else if (triplet.dstId == dst_id) {
-            println(s"[${Calendar.getInstance().getTime}] Found destination in neighborhood of ${triplet.srcId}")
             triplet.srcAttr._2.foreach(v => shortestPath.append(v))
             shortestPath.append(dst_id)
             Iterator.empty
             //Core Node in my neighborhood
           } else if (core_nodes.contains(triplet.dstId)) {
-            println(s"[${Calendar.getInstance().getTime}] Found src_core in neighborhood of ${triplet.srcId}")
             triplet.srcAttr._2.foreach(v => src2core += v)
             src2core += triplet.dstId
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
           } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
-            println(s"[${Calendar.getInstance().getTime}] Nothing found - looking at neighbours")
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
@@ -599,14 +596,12 @@ object Util {
 
         triplet => {
           if (core_nodes.contains(triplet.dstId)) {
-            println(s"[${Calendar.getInstance().getTime}] Found dst_core in neighborhood of ${triplet.srcId}")
             triplet.srcAttr._2.foreach(v => dst2core += v)
             dst2core += triplet.dstId
             dst2core = dst2core.reverse
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
           } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
-            println(s"[${Calendar.getInstance().getTime}] Nothing found - looking at neighbours")
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
