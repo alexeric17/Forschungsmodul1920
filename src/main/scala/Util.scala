@@ -6,11 +6,12 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
 object Util {
   //set these to the correct paths and names for your project
-  val FM1920HOME = "/scratch/Forschungsmodul1920/forschungsmodul1920"
+  val FM1920HOME = "/home/schererc/Schreibtisch/WS1920/Forschungsmodul Datenbanken/forschungsmodul1920"
   val dataDir = FM1920HOME + "/data"
   val nodeDir = dataDir + "/nodes"
   val edgeDir = dataDir + "/edges"
@@ -629,15 +630,18 @@ object Util {
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
       .rdd
-      .map(x => x(0))
-      .map(x => x.asInstanceOf[Long])
-      .take(1)
+
+    val core_connection_list = core_connection
+      .first()
+      .getList[Long](0)
       .toList
 
+    var result = ListBuffer[Long]()
+    result = result ++ src2core
+    core_connection_list.foreach(v => result += v)
+    result ++ dst2core
 
-    println(core_connection)
-
-    List()
+    result.toList.distinct
   }
 }
 
