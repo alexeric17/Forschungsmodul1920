@@ -524,7 +524,7 @@ object Util {
     val core_connection = core_paths
       .toDF("src_id", "dst_id", "shortest_path")
       .select("src_id")
-      .map(r => r.getInt(0))
+      .map(r => r.getLong(0).toInt)
       .collect()
 
     core_connection.toList
