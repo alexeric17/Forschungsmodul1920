@@ -607,7 +607,7 @@ object Util {
             dst2core = dst2core.reverse
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
-          } else if (edges.reverse.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          } else if (edges.filter(e => e.dstId == triplet.srcId).sortBy(e => -e.attr).map(e => e.srcId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
