@@ -9,6 +9,7 @@ object ComputePageRanks {
     print(s"Runtime: $runtime ms\n")
 
     spark.createDataFrame(ranks.vertices.distinct()).toDF("id", "pagerank")
+      .distinct()
       .coalesce(1)
       .write
       .json(pagerankDir)
