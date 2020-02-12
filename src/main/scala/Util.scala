@@ -655,6 +655,7 @@ object Util {
 
     result.toList.distinct
 
+    println(s"Final result was composed of: src2core: ${src2core.toString()}, core_connection: ${core_connection_list.toString()}, dst2core: ${dst2core.toString()}")
     List()
   }
 
