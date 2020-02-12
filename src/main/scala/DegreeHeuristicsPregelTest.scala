@@ -28,7 +28,7 @@ object DegreeHeuristicsPregelTest {
     } while (nr_interesting_nodes < 1000)
 
     val interesting_node_groups = interesting_nodes.groupBy(v => v._2._2.length)
-    val pathlengths = interesting_node_groups.keys.toList.sortBy(x => -x)
+    val pathlengths = interesting_node_groups.keys.toList.sortBy(x => x)
     var total_pathlength = 0
     interesting_node_groups.foreach(g => total_pathlength += (g._1 * g._2.length))
     println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id with the following pathlength nrs:")
