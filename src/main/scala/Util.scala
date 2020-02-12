@@ -650,7 +650,7 @@ object Util {
     var result = ListBuffer[Long]()
     result = result ++ src2core
     core_connection_list.foreach(v => result += v)
-    result ++ dst2core.reverse
+    dst2core.reverse.foreach(v => result += v)
 
     result.toList.distinct
   }
