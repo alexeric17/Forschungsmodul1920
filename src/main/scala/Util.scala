@@ -587,7 +587,9 @@ object Util {
     if (!core_nodes.contains(dst_id)) {
       println(s"[${Calendar.getInstance().getTime}] Computing second half of heurstics")
 
-      val reversed_graph = annotated_graph.reverse
+      val reversed_g = graph.reverse
+      val g_inDeg = reversed_g.outerJoinVertices(reversed_g.inDegrees)((id,title,deg) => deg.getOrElse(0))
+      val reversed_graph = g_inDeg.mapTriplets(e => e.dstAttr.toDouble)
 
       val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
         reversed_graph.mapVertices((id, _) => if (id == dst_id) (0.0, List[VertexId](dst_id)) else (Double.PositiveInfinity, List[VertexId]()))
