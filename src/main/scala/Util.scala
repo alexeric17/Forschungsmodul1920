@@ -543,6 +543,8 @@ object Util {
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
     val queue = mutable.Queue[(Long, ListBuffer[Long])]()
+    val visited_nodes = ListBuffer[VertexId]()
+    var result = ListBuffer[Long]()
 
     if (src_id == dst_id) {
       return List[VertexId](src_id)
@@ -562,7 +564,9 @@ object Util {
         val current_path = current._2
         current_path += current_id
 
-        val current_neighborhood = edges.filter(e => e.srcId == current_id).sortBy(-_.attr)
+        visited_nodes += current_id
+
+        val current_neighborhood = edges.filter(e => (e.srcId == current_id) && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
 
         //Check if destination is in current neighborhood
         current_neighborhood.foreach(e => if (e.dstId == dst_id) {
@@ -600,6 +604,8 @@ object Util {
       val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
       queue.clear()
+      visited_nodes.clear()
+
       queue.enqueue((dst_id, ListBuffer()))
 
       println(s"[${Calendar.getInstance().getTime}] Computing second half of heuristics")
@@ -609,8 +615,23 @@ object Util {
         val current_id = current._1
         val current_path = current._2
         current_path += current_id
+        visited_nodes += current_id
 
-        val current_neighborhood = edges_rev.filter(e => e.srcId == current_id).sortBy(-_.attr)
+        val current_neighborhood = edges_rev.filter(e => e.srcId == current_id && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
+
+        //Check if any node in current neighborhood is part of src2core
+        val neighbored_path_nodes = current_neighborhood.filter(e => src2core.contains(e.dstId))
+        if (neighbored_path_nodes.nonEmpty) {
+          //Found connection to src2core path - end computation and return found path
+          val found_node = neighbored_path_nodes(1).dstId
+          while (src2core.head != found_node) {
+            result += src2core.head
+            src2core.remove(0)
+          }
+          result += found_node
+          result ++= current_path.reverse
+          return result.distinct.toList
+        }
 
         //Check if any core node is in current neighborhood
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
@@ -647,10 +668,9 @@ object Util {
       .getList[Long](0)
       .toList
 
-    var result = ListBuffer[Long]()
-    result = result ++ src2core
-    core_connection_list.foreach(v => result += v)
-    dst2core.reverse.foreach(v => result += v)
+    result ++= src2core ++= core_connection_list
+    result ++= core_connection_list
+    result ++= dst2core.reverse
 
     result.toList.distinct
   }
