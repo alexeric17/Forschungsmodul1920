@@ -539,7 +539,6 @@ object Util {
 
     val annotated_graph = degreeHeurstics(graph)
     val edges = annotated_graph.edges.collect()
-    val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
     var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
@@ -631,7 +630,7 @@ object Util {
       return List()
     }
 
-    println(s"Trying to compose result from: src2core: ${src2core.toArray.toString} and dst2core: ${dst2core.toArray.toString}")
+    println(s"Trying to compose result from: src2core: ${src2core.toList.toString} and dst2core: ${dst2core.toList.toString}")
 
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
