@@ -616,9 +616,9 @@ object Util {
         //Check if any core node is in current neighborhood
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
-          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(1).dstId}) in neighborhood of id $current_id")
+          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
           current_path.foreach(v => dst2core += v)
-          dst2core += neighbored_cores(1).dstId
+          dst2core += neighbored_cores(0).dstId
         } else {
           //Nothing found here - add next nodes
           current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
@@ -631,7 +631,7 @@ object Util {
       return List()
     }
 
-    println(s"Trying to compose result from: src2core: ${src2core.toString()} and dst2core: ${dst2core.toString()}")
+    println(s"Trying to compose result from: src2core: ${src2core.toArray.toString} and dst2core: ${dst2core.toArray.toString}")
 
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
