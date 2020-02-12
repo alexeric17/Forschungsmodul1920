@@ -663,6 +663,11 @@ object Util {
       .where(s"src=$src_core and dst=$dst_core")
       .rdd
 
+    if (core_connection.collect().isEmpty) {
+      //Unfortunately, found two core nodes which have no connection :(
+      return List()
+    }
+
     val core_connection_list = core_connection
       .first()
       .getList[Long](0)
