@@ -594,6 +594,7 @@ object Util {
       val reversed_g = graph.reverse
       val g_inDeg = reversed_g.outerJoinVertices(reversed_g.inDegrees)((id,title,deg) => deg.getOrElse(0))
       val reversed_graph = g_inDeg.mapTriplets(e => e.dstAttr.toDouble)
+      val edges_rev = reversed_graph.edges.collect()
 
       val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
         reversed_graph.mapVertices((id, _) => if (id == dst_id) (0.0, List[VertexId](dst_id)) else (Double.PositiveInfinity, List[VertexId]()))
@@ -610,7 +611,7 @@ object Util {
             dst2core = dst2core.reverse
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
-          } else if (edges.filter(e => e.dstId == triplet.srcId).sortBy(e => -e.attr).map(e => e.srcId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          } else if (edges_rev.filter(e => e.dstId == triplet.srcId).sortBy(e => -e.attr).map(e => e.srcId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty

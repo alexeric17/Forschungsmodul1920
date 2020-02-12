@@ -43,8 +43,7 @@ object DegreeHeuristicsPregelTest {
         not_found_paths = 0
         for (i <- 0 until math.min(9, sample.length-1)) {
           val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
-          println(s"Searching for path to id ${sample(i)._1} with nr InEdges ${inEdgesDst.length}")
-          println(s"Optimal path: ${sample(i)._2._2.toString()}")
+          println(s"Searching for path to id ${sample(i)._1} with nr InEdges ${inEdgesDst.length} (Optimal path: ${sample(i)._2._2.toString()})")
           val start = System.nanoTime()
           val prediction = heuristic_sssp_pregel(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
           println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
