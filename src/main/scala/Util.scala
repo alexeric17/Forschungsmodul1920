@@ -560,7 +560,7 @@ object Util {
         val current = queue.dequeue()
         val current_id = current._1
         val current_path = current._2
-        current_path += src_id
+        current_path += current_id
 
         val current_neighborhood = edges.filter(e => e.srcId == current_id).sortBy(-_.attr)
 
@@ -608,7 +608,7 @@ object Util {
         val current = queue.dequeue()
         val current_id = current._1
         val current_path = current._2
-        current_path += dst_id
+        current_path += current_id
 
         val current_neighborhood = edges_rev.filter(e => e.srcId == current_id).sortBy(-_.attr)
 
