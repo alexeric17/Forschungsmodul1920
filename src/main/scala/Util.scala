@@ -609,7 +609,7 @@ object Util {
         val current = queue.dequeue()
         val current_id = current._1
         val current_path = current._2
-        current_path += src_id
+        current_path += dst_id
 
         val current_neighborhood = edges_rev.filter(e => e.srcId == current_id).sortBy(-_.attr)
 
@@ -635,7 +635,7 @@ object Util {
 
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
-    val dst_core = dst2core.head
+    val dst_core = dst2core.last
 
     val core_connection = core_paths
       .toDF()
@@ -651,7 +651,7 @@ object Util {
     var result = ListBuffer[Long]()
     result = result ++ src2core
     core_connection_list.foreach(v => result += v)
-    result ++ dst2core
+    result ++ dst2core.reverse
 
     result.toList.distinct
   }
@@ -731,7 +731,6 @@ object Util {
           } else if (core_nodes.contains(triplet.dstId)) {
             triplet.srcAttr._2.foreach(v => dst2core += v)
             dst2core += triplet.dstId
-            dst2core = dst2core.reverse
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
           } else if (edges_rev.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
@@ -754,7 +753,7 @@ object Util {
 
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
-    val dst_core = dst2core.head
+    val dst_core = dst2core.last
 
     println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
 
@@ -772,7 +771,7 @@ object Util {
     var result = ListBuffer[Long]()
     result = result ++ src2core
     core_connection_list.foreach(v => result += v)
-    result ++ dst2core
+    result ++ dst2core.reverse
 
     result.toList.distinct
   }
