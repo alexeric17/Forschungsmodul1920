@@ -542,6 +542,10 @@ object Util {
     var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
+    if(src_id == dst_id)
+      {
+        return List[VertexId](src_id)
+      }
 
     val initGraph: Graph[(Double, List[VertexId]), Double] =
       annotated_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
@@ -596,7 +600,6 @@ object Util {
 
       val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
-
         triplet => {
           if (dst2core.nonEmpty) {
             //Core Node found
