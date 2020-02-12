@@ -43,6 +43,7 @@ object DegreeHeuristicsPregelTest {
           val start = System.nanoTime()
           val prediction = heuristic_sssp_pregel(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
           println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+          println(s"Heuristics Prediction: ${prediction.toString()}")
           if (prediction.isEmpty) {
             not_found_paths += 1
           } else {
