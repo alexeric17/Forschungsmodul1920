@@ -589,7 +589,6 @@ object Util {
     }
 
     if (!core_nodes.contains(dst_id)) {
-      println(s"[${Calendar.getInstance().getTime}] Computing second half of heurstics")
 
       val reversed_g = graph.reverse
       val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id,title,deg) => deg.getOrElse(0))
@@ -599,6 +598,7 @@ object Util {
       val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
         reversed_graph.mapVertices((id, _) => if (id == dst_id) (0.0, List[VertexId](dst_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
+      println(s"[${Calendar.getInstance().getTime}] Computing second half of heurstics")
       val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
         triplet => {
