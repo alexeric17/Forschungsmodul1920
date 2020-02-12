@@ -584,7 +584,10 @@ object Util {
           src2core += neighbored_cores(0).dstId
         } else {
           //Nothing found here - add next nodes
-          current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
+          current_neighborhood
+            .filter(e => queue.contains((e.dstId, _)))
+            .take(n)
+            .foreach(e => queue.enqueue((e.dstId, current_path)))
         }
       }
     }
@@ -640,7 +643,10 @@ object Util {
           dst2core += neighbored_cores(0).dstId
         } else {
           //Nothing found here - add next nodes
-          current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
+          current_neighborhood
+            .filter(e => queue.contains((e.dstId, _)))
+            .take(n)
+            .foreach(e => queue.enqueue((e.dstId, current_path)))
         }
       }
     }
