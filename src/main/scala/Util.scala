@@ -554,7 +554,7 @@ object Util {
       src2core += src_id
     } else {
 
-      queue.add((src_id, ListBuffer()))
+      queue.enqueue((src_id, ListBuffer()))
 
       println(s"[${Calendar.getInstance().getTime}] Computing first half of heurstics")
       while (queue.nonEmpty && src2core.isEmpty) {
@@ -582,7 +582,7 @@ object Util {
           }
         })
         //Nothing found here - add next nodes
-        current_neighborhood.take(n).foreach(e => queue.add((e.dstId, current_path)))
+        current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
       }
     }
 
@@ -600,7 +600,7 @@ object Util {
       val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
       queue.clear()
-      queue.add((dst_id, ListBuffer()))
+      queue.enqueue((dst_id, ListBuffer()))
 
       println(s"[${Calendar.getInstance().getTime}] Computing second half of heuristics")
 
@@ -623,7 +623,7 @@ object Util {
           }
         })
         //Nothing found here - add next nodes
-        current_neighborhood.take(n).foreach(e => queue.add((e.dstId, current_path)))
+        current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
       }
     }
 
