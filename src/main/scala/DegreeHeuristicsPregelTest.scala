@@ -37,6 +37,7 @@ object DegreeHeuristicsPregelTest {
 
     for (nr_neighbors <- 20 to 1 by -1) {
       pathlengths.foreach(pathlength => {
+        println(s"Sample of pathlength $pathlengths")
         val group = interesting_node_groups(pathlength)
         val sample = group.take(10)
         not_found_paths = 0
