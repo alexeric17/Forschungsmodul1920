@@ -577,9 +577,9 @@ object Util {
         //Check if any core node is in current neighborhood
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
-          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(1).dstId}) in neighborhood of id $current_id")
+          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
           current_path.foreach(v => src2core += v)
-          src2core += neighbored_cores(1).dstId
+          src2core += neighbored_cores(0).dstId
         } else {
           //Nothing found here - add next nodes
           current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
