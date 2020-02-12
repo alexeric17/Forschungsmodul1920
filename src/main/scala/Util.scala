@@ -539,7 +539,6 @@ object Util {
 
     val annotated_graph = degreeHeurstics(graph)
     val edges = annotated_graph.edges.collect()
-    var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
     val queue = mutable.Queue[(Long, ListBuffer[Long])]()
@@ -572,9 +571,9 @@ object Util {
         current_neighborhood.foreach(e => if (e.dstId == dst_id) {
           //Destination in my neighborhood
           println(s"[${Calendar.getInstance().getTime}] Found destination node in neighborhood of id $current_id")
-          current_path.foreach(v => shortestPath += v)
-          shortestPath += dst_id
-          return shortestPath.toList
+          current_path.foreach(v => result += v)
+          result += dst_id
+          return result.toList
         })
 
         //Check if any core node is in current neighborhood
@@ -630,7 +629,7 @@ object Util {
           }
           result += found_node
           result ++= current_path.reverse
-          return result.distinct.toList
+          return result.toList
         }
 
         //Check if any core node is in current neighborhood
@@ -673,11 +672,11 @@ object Util {
       .getList[Long](0)
       .toList
 
-    result ++= src2core ++= core_connection_list
-    result ++= core_connection_list
+    result ++= src2core
+    result ++= core_connection_list.subList(1, core_connection_list.length - 1)
     result ++= dst2core.reverse
 
-    result.toList.distinct
+    result.toList
   }
 
   def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
