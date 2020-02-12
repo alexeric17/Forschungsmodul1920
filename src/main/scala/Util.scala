@@ -631,11 +631,11 @@ object Util {
       return List()
     }
 
+    println(s"Trying to compose result from: src2core: ${src2core.toString()} and dst2core: ${dst2core.toString()}")
+
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
     val dst_core = dst2core.head
-
-    println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
 
     val core_connection = core_paths
       .toDF()
@@ -654,9 +654,6 @@ object Util {
     result ++ dst2core
 
     result.toList.distinct
-
-    println(s"Final result was composed of: src2core: ${src2core.toString()}, core_connection: ${core_connection_list.toString()}, dst2core: ${dst2core.toString()}")
-    List()
   }
 
   def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
