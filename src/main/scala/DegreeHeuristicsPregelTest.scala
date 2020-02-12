@@ -28,6 +28,7 @@ object DegreeHeuristicsPregelTest {
     } while (nr_interesting_nodes < 1000)
 
     val interesting_node_groups = interesting_nodes.groupBy(v => v._2._2.length)
+    val pathlengths = interesting_node_groups.keys.toList.sortBy(x => -x)
     var total_pathlength = 0
     interesting_node_groups.foreach(g => total_pathlength += (g._1 * g._2.length))
     println(s"Found $nr_interesting_nodes interesting paths (length>0) from source id $src_id with the following pathlength nrs:")
@@ -35,11 +36,13 @@ object DegreeHeuristicsPregelTest {
     println(s"Average Pathlength: ${total_pathlength.toDouble / nr_interesting_nodes}")
 
     for (nr_neighbors <- 20 to 1 by -1) {
-      interesting_node_groups.foreach(group => {
-        val pathlength = group._1
-        val sample = group._2.take(10)
+      pathlengths.foreach(pathlength => {
+        val group = interesting_node_groups(pathlength)
+        val sample = group.take(10)
         not_found_paths = 0
         for (i <- 1 until 10) {
+          val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
+          println(s"Dst id ${sample(i)._1} with nr InEdges ${inEdgesDst.length}")
           val start = System.nanoTime()
           val prediction = heuristic_sssp_pregel(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
           println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
