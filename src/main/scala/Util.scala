@@ -592,8 +592,8 @@ object Util {
       println(s"[${Calendar.getInstance().getTime}] Computing second half of heurstics")
 
       val reversed_g = graph.reverse
-      val g_inDeg = reversed_g.outerJoinVertices(reversed_g.inDegrees)((id,title,deg) => deg.getOrElse(0))
-      val reversed_graph = g_inDeg.mapTriplets(e => e.dstAttr.toDouble)
+      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id,title,deg) => deg.getOrElse(0))
+      val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
 
       val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
