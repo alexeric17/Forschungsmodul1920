@@ -7,6 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.graphframes.GraphFrame
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object Util {
@@ -533,6 +534,131 @@ object Util {
     core_connection.toList
   }
 
+  def heuristics_sssp(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
+    println(s"[${Calendar.getInstance().getTime}] Starting Computation of heuristic shortest path from $src_id to $dst_id")
+
+    val annotated_graph = degreeHeurstics(graph)
+    val edges = annotated_graph.edges.collect()
+    val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
+    var shortestPath = ListBuffer[VertexId]()
+    var src2core = ListBuffer[VertexId]()
+    var dst2core = ListBuffer[VertexId]()
+    val queue = mutable.Queue[(Long, ListBuffer[Long])]()
+
+    if (src_id == dst_id) {
+      return List[VertexId](src_id)
+    }
+
+    if (core_nodes.contains(src_id)) {
+      println(s"[${Calendar.getInstance().getTime}] Skipped first half of heurstics - $dst_id is already in the core")
+      src2core += src_id
+    } else {
+
+      queue.add((src_id, ListBuffer()))
+
+      println(s"[${Calendar.getInstance().getTime}] Computing first half of heurstics")
+      while (queue.nonEmpty && src2core.isEmpty) {
+        val current = queue.dequeue()
+        val current_id = current._1
+        val current_path = current._2
+        current_path += src_id
+
+        val current_neighborhood = edges.filter(e => e.srcId == current_id).sortBy(-_.attr)
+
+        current_neighborhood.foreach(edge => {
+          if (src2core.isEmpty) {
+            if (edge.dstId == dst_id) {
+              //Destination in my neighborhood
+              println(s"[${Calendar.getInstance().getTime}] Found destination node in neighborhood of id $current_id")
+              current_path.foreach(v => shortestPath += v)
+              shortestPath += dst_id
+              return shortestPath.toList
+            } else if (core_nodes.contains(edge.dstId)) {
+              //Core Node in my neighborhood
+              println(s"[${Calendar.getInstance().getTime}] Found core node in neighborhood of id $current_id")
+              current_path.foreach(v => src2core += v)
+              src2core += edge.dstId
+            }
+          }
+        })
+        //Nothing found here - add next nodes
+        current_neighborhood.take(n).foreach(e => queue.add((e.dstId, current_path)))
+      }
+    }
+
+    if (src2core.isEmpty) {
+      println("Nothing found in first half of heuristics. Returning empty list.")
+      return List()
+    }
+
+    if (core_nodes.contains(dst_id)) {
+      println(s"[${Calendar.getInstance().getTime}] Skipped second half of heuristics - $dst_id is already in the core")
+      dst2core += dst_id
+    } else {
+      val reversed_g = graph.reverse
+      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id, title, deg) => deg.getOrElse(0))
+      val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
+      val edges_rev = reversed_graph.edges.collect()
+      queue.clear()
+      queue.add((dst_id, ListBuffer()))
+
+      println(s"[${Calendar.getInstance().getTime}] Computing second half of heuristics")
+
+      while (queue.nonEmpty && dst2core.isEmpty) {
+        val current = queue.dequeue()
+        val current_id = current._1
+        val current_path = current._2
+        current_path += src_id
+
+        val current_neighborhood = edges_rev.filter(e => e.srcId == current_id).sortBy(-_.attr)
+
+        current_neighborhood.foreach(edge => {
+          if (dst2core.isEmpty) {
+            if (core_nodes.contains(edge.dstId)) {
+              //Core Node in my neighborhood
+              println(s"[${Calendar.getInstance().getTime}] Found core node in neighborhood of id $current_id")
+              current_path.foreach(v => dst2core += v)
+              dst2core += edge.dstId
+            }
+          }
+        })
+        //Nothing found here - add next nodes
+        current_neighborhood.take(n).foreach(e => queue.add((e.dstId, current_path)))
+      }
+    }
+
+    if (dst2core.isEmpty) {
+      println("Nothing found in first half of heuristics. Returning empty list.")
+      return List()
+    }
+
+    val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+    val src_core = src2core.last
+    val dst_core = dst2core.head
+
+    println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
+
+    val core_connection = core_paths
+      .toDF()
+      .select("path")
+      .where(s"src=$src_core and dst=$dst_core")
+      .rdd
+
+    val core_connection_list = core_connection
+      .first()
+      .getList[Long](0)
+      .toList
+
+    var result = ListBuffer[Long]()
+    result = result ++ src2core
+    core_connection_list.foreach(v => result += v)
+    result ++ dst2core
+
+    result.toList.distinct
+
+    List()
+  }
+
   def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
     //n is how many of highest outDeg neighbours we take.
     //Initiallize the graph.
@@ -542,10 +668,9 @@ object Util {
     var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
-    if(src_id == dst_id)
-      {
-        return List[VertexId](src_id)
-      }
+    if (src_id == dst_id) {
+      return List[VertexId](src_id)
+    }
 
     val initGraph: Graph[(Double, List[VertexId]), Double] =
       annotated_graph.mapVertices((id, _) => if (id == src_id) (0.0, List[VertexId](src_id)) else (Double.PositiveInfinity, List[VertexId]()))
@@ -591,13 +716,14 @@ object Util {
     if (!core_nodes.contains(dst_id)) {
 
       val reversed_g = graph.reverse
-      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id,title,deg) => deg.getOrElse(0))
+      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id, title, deg) => deg.getOrElse(0))
       val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
 
       val initReversedGraph: Graph[(Double, List[VertexId]), Double] =
         reversed_graph.mapVertices((id, _) => if (id == dst_id) (0.0, List[VertexId](dst_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
+      edges_rev.filter(e => e.srcId == dst_id).foreach(e => println(s"(${e.srcId}, ${e.dstId}): ${e.attr}"))
       println(s"[${Calendar.getInstance().getTime}] Computing second half of heurstics")
       val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
