@@ -565,24 +565,25 @@ object Util {
 
         val current_neighborhood = edges.filter(e => e.srcId == current_id).sortBy(-_.attr)
 
-        current_neighborhood.foreach(edge => {
-          if (src2core.isEmpty) {
-            if (edge.dstId == dst_id) {
-              //Destination in my neighborhood
-              println(s"[${Calendar.getInstance().getTime}] Found destination node in neighborhood of id $current_id")
-              current_path.foreach(v => shortestPath += v)
-              shortestPath += dst_id
-              return shortestPath.toList
-            } else if (core_nodes.contains(edge.dstId)) {
-              //Core Node in my neighborhood
-              println(s"[${Calendar.getInstance().getTime}] Found core node in neighborhood of id $current_id")
-              current_path.foreach(v => src2core += v)
-              src2core += edge.dstId
-            }
-          }
+        //Check if destination is in current neighborhood
+        current_neighborhood.foreach(e => if (e.dstId == dst_id) {
+          //Destination in my neighborhood
+          println(s"[${Calendar.getInstance().getTime}] Found destination node in neighborhood of id $current_id")
+          current_path.foreach(v => shortestPath += v)
+          shortestPath += dst_id
+          return shortestPath.toList
         })
-        //Nothing found here - add next nodes
-        current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
+
+        //Check if any core node is in current neighborhood
+        val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
+        if (neighbored_cores.nonEmpty) {
+          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(1).dstId}) in neighborhood of id $current_id")
+          current_path.foreach(v => src2core += v)
+          src2core += neighbored_cores(1).dstId
+        } else {
+          //Nothing found here - add next nodes
+          current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
+        }
       }
     }
 
@@ -612,18 +613,16 @@ object Util {
 
         val current_neighborhood = edges_rev.filter(e => e.srcId == current_id).sortBy(-_.attr)
 
-        current_neighborhood.foreach(edge => {
-          if (dst2core.isEmpty) {
-            if (core_nodes.contains(edge.dstId)) {
-              //Core Node in my neighborhood
-              println(s"[${Calendar.getInstance().getTime}] Found core node in neighborhood of id $current_id")
-              current_path.foreach(v => dst2core += v)
-              dst2core += edge.dstId
-            }
-          }
-        })
-        //Nothing found here - add next nodes
-        current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
+        //Check if any core node is in current neighborhood
+        val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
+        if (neighbored_cores.nonEmpty) {
+          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(1).dstId}) in neighborhood of id $current_id")
+          current_path.foreach(v => dst2core += v)
+          dst2core += neighbored_cores(1).dstId
+        } else {
+          //Nothing found here - add next nodes
+          current_neighborhood.take(n).foreach(e => queue.enqueue((e.dstId, current_path)))
+        }
       }
     }
 
