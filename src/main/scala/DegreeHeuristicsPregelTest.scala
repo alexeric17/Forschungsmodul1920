@@ -37,11 +37,11 @@ object DegreeHeuristicsPregelTest {
 
     for (nr_neighbors <- 20 to 1 by -1) {
       pathlengths.foreach(pathlength => {
-        println(s"Sample of pathlength $pathlengths")
+        println(s"Sample of pathlength $pathlength")
         val group = interesting_node_groups(pathlength)
         val sample = group.take(10)
         not_found_paths = 0
-        for (i <- 1 until 10) {
+        for (i <- 0 until math.max(9, sample.length)) {
           val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
           println(s"Dst id ${sample(i)._1} with nr InEdges ${inEdgesDst.length}")
           val start = System.nanoTime()
