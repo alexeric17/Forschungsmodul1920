@@ -707,6 +707,7 @@ object Util {
     val annotated_graph = degreeHeurstics(graph)
     val edges1 = annotated_graph.edges.collect()
     val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
+
     var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
@@ -721,6 +722,7 @@ object Util {
 
     if (!core_nodes.contains(src_id)) {
       println(s"[${Calendar.getInstance().getTime}] Computing first half of heurstics")
+      edges1.filter(e => e.srcId == src_id).foreach(e => println(s"(${e.srcId}, ${e.dstId}): ${e.attr}"))
       val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
