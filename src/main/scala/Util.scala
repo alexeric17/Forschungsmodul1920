@@ -580,7 +580,10 @@ object Util {
         })
 
         //Check if any core node is in current neighborhood
-        val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
+        val neighbored_cores = current_neighborhood
+          .distinct
+          .filter(e => core_nodes.contains(e.dstId))
+
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
           println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toList.toString()}")
@@ -628,7 +631,10 @@ object Util {
         val current_neighborhood = edges_rev.filter(e => e.srcId == current_id && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
 
         //Check if any node in current neighborhood is part of src2core
-        val neighbored_path_nodes = current_neighborhood.filter(e => src2core.contains(e.dstId))
+        val neighbored_path_nodes = current_neighborhood
+          .distinct
+          .filter(e => src2core.contains(e.dstId))
+
         if (neighbored_path_nodes.nonEmpty) {
           //Found connection to src2core path - end computation and return found path
           println(s"[${Calendar.getInstance().getTime}] Found shortcut to node of src2core. Returning that path.")
