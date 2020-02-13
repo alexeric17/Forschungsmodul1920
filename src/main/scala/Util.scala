@@ -752,8 +752,10 @@ object Util {
     }
 
     if (shortestPath.nonEmpty) {
+      println("SP found in first half. Returning: ",shortestPath)
       return shortestPath.toList
     }
+    println("src2core length is :",src2core.length, "src2core content is :", src2core.length)
 
     if (!core_nodes.contains(dst_id)) {
 
