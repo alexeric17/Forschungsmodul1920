@@ -535,8 +535,6 @@ object Util {
   }
 
   def heuristics_sssp(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
-    println(s"[${Calendar.getInstance().getTime}] Starting Computation of heuristic shortest path from $src_id to $dst_id")
-
     val annotated_graph = degreeHeurstics(graph)
     val edges = annotated_graph.edges.collect()
     var src2core = ListBuffer[VertexId]()
@@ -550,21 +548,16 @@ object Util {
     }
 
     if (core_nodes.contains(src_id)) {
-      println(s"[${Calendar.getInstance().getTime}] Skipped first half of heurstics - $dst_id is already in the core")
       src2core += src_id
     } else {
 
       queue.enqueue((src_id, ListBuffer()))
 
-      println(s"[${Calendar.getInstance().getTime}] Computing first half of heurstics")
       while (queue.nonEmpty && src2core.isEmpty) {
         val current = queue.dequeue()
         val current_id = current._1
         val current_path = current._2
         current_path += current_id
-
-        println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
-
 
         visited_nodes += current_id
 
@@ -575,7 +568,6 @@ object Util {
         //Check if destination is in current neighborhood
         current_neighborhood.foreach(e => if (e.dstId == dst_id) {
           //Destination in my neighborhood
-          println(s"[${Calendar.getInstance().getTime}] Found destination node in neighborhood of id $current_id")
           current_path.foreach(v => result += v)
           result += dst_id
           return result.toList
@@ -586,8 +578,6 @@ object Util {
           .filter(e => core_nodes.contains(e.dstId))
 
         if (neighbored_cores.nonEmpty) {
-          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
-          println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toList.toString()}")
           current_path.foreach(v => src2core += v)
           src2core += neighbored_cores(0).dstId
         } else {
@@ -601,12 +591,10 @@ object Util {
     }
 
     if (src2core.isEmpty) {
-      println("Nothing found in first half of heuristics. Returning empty list.")
       return List()
     }
 
     if (core_nodes.contains(dst_id)) {
-      println(s"[${Calendar.getInstance().getTime}] Skipped second half of heuristics - $dst_id is already in the core")
       dst2core += dst_id
     } else {
       val reversed_g = graph.reverse
@@ -618,16 +606,12 @@ object Util {
 
       queue.enqueue((dst_id, ListBuffer()))
 
-      println(s"[${Calendar.getInstance().getTime}] Computing second half of heuristics")
-
       while (queue.nonEmpty && dst2core.isEmpty) {
         val current = queue.dequeue()
         val current_id = current._1
         val current_path = current._2
         current_path += current_id
         visited_nodes += current_id
-
-        println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
 
         val current_neighborhood = edges_rev
           .distinct
@@ -639,7 +623,6 @@ object Util {
 
         if (neighbored_path_nodes.nonEmpty) {
           //Found connection to src2core path - end computation and return found path
-          println(s"[${Calendar.getInstance().getTime}] Found shortcut to node of src2core. Returning that path.")
           val found_node = neighbored_path_nodes(0).dstId
           while (src2core.head != found_node) {
             result += src2core.head
@@ -653,8 +636,6 @@ object Util {
         //Check if any core node is in current neighborhood
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
-          println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
-          println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toString()}")
           current_path.foreach(v => dst2core += v)
           dst2core += neighbored_cores(0).dstId
         } else {
@@ -668,11 +649,8 @@ object Util {
     }
 
     if (dst2core.isEmpty) {
-      println("Nothing found in first half of heuristics. Returning empty list.")
       return List()
     }
-
-    println(s"Trying to compose result from: src2core: ${src2core.toList.toString} and dst2core: ${dst2core.toList.toString}")
 
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
     val src_core = src2core.last
@@ -757,10 +735,10 @@ object Util {
     }
 
     if (shortestPath.nonEmpty) {
-      println("SP found in first half. Returning: ",shortestPath)
+      println("SP found in first half. Returning: ", shortestPath)
       return shortestPath.toList
     }
-    println("src2core length is :",src2core.length, "src2core content is :", src2core.length)
+    println("src2core length is :", src2core.length, "src2core content is :", src2core.length)
 
     if (!core_nodes.contains(dst_id)) {
 

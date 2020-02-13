@@ -13,6 +13,7 @@ object DegreeHeuristicsTest {
     var errors = new mutable.HashMap[Int, ListBuffer[Int]]
     var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
     var nr_interesting_nodes = 0
+    var runtimes = ListBuffer[Double]()
     var src_id = -1
     var not_found_paths = 0
     val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
@@ -35,18 +36,19 @@ object DegreeHeuristicsTest {
     interesting_node_groups.foreach(g => println(s"Length ${g._1}: ${g._2.length} Occurences"))
     println(s"Average Pathlength: ${total_pathlength.toDouble / nr_interesting_nodes}")
 
-    for (nr_neighbors <- 20 to 1 by -1) {
+    for (nr_neighbors <- 3 to 10 by 1) {
       pathlengths.foreach(pathlength => {
-        println(s"Sample of pathlength $pathlength")
+        println(s"Samples of pathlength $pathlength :")
         val group = interesting_node_groups(pathlength)
-        val sample = group.take(10)
+        val sample = group.take(5)
         not_found_paths = 0
         for (i <- 0 until math.min(9, sample.length - 1)) {
           val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
-          println(s"Searching for path to id ${sample(i)._1} with nr InEdges ${inEdgesDst.length} (Optimal path: ${sample(i)._2._2.toString()})")
           val start = System.nanoTime()
           val prediction = heuristics_sssp(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
-          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+          val runtime = (System.nanoTime() - start) / 1000 / 1000
+          runtimes += runtime
+          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + runtime + "ms")
           println(s"Heuristics Prediction: ${prediction.toString()}")
           if (prediction.isEmpty) {
             not_found_paths += 1
@@ -62,6 +64,7 @@ object DegreeHeuristicsTest {
       })
 
       println("Neighborhood size: " + nr_neighbors)
+      println("Average runtime: " + (runtimes.sum.toLong / runtimes.length))
       println("Nr of not found paths: " + not_found_paths)
       var total_nr = 0
       var total_error = 0
