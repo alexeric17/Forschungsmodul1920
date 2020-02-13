@@ -568,7 +568,9 @@ object Util {
 
         visited_nodes += current_id
 
-        val current_neighborhood = edges.filter(e => (e.srcId == current_id) && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
+        val current_neighborhood = edges
+          .distinct
+          .filter(e => (e.srcId == current_id) && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
 
         //Check if destination is in current neighborhood
         current_neighborhood.foreach(e => if (e.dstId == dst_id) {
@@ -581,7 +583,6 @@ object Util {
 
         //Check if any core node is in current neighborhood
         val neighbored_cores = current_neighborhood
-          .distinct
           .filter(e => core_nodes.contains(e.dstId))
 
         if (neighbored_cores.nonEmpty) {
@@ -628,11 +629,12 @@ object Util {
 
         println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
 
-        val current_neighborhood = edges_rev.filter(e => e.srcId == current_id && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
+        val current_neighborhood = edges_rev
+          .distinct
+          .filter(e => e.srcId == current_id && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
 
         //Check if any node in current neighborhood is part of src2core
         val neighbored_path_nodes = current_neighborhood
-          .distinct
           .filter(e => src2core.contains(e.dstId))
 
         if (neighbored_path_nodes.nonEmpty) {
