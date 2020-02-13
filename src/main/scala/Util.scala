@@ -563,6 +563,9 @@ object Util {
         val current_path = current._2
         current_path += current_id
 
+        println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
+
+
         visited_nodes += current_id
 
         val current_neighborhood = edges.filter(e => (e.srcId == current_id) && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
@@ -580,7 +583,7 @@ object Util {
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
-          println(s"Adding the following nodes from current path: ${current_path.toString()}")
+          println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toList.toString()}")
           current_path.foreach(v => src2core += v)
           src2core += neighbored_cores(0).dstId
         } else {
@@ -620,6 +623,8 @@ object Util {
         current_path += current_id
         visited_nodes += current_id
 
+        println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
+
         val current_neighborhood = edges_rev.filter(e => e.srcId == current_id && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
 
         //Check if any node in current neighborhood is part of src2core
@@ -641,7 +646,7 @@ object Util {
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
-          println(s"Adding the following nodes from current path: ${current_path.toString()}")
+          println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toString()}")
           current_path.foreach(v => dst2core += v)
           dst2core += neighbored_cores(0).dstId
         } else {
