@@ -11,6 +11,7 @@ object DegreeHeuristicsPregelTest {
     val Ed = filtered_graph.edges.collect().filter(e => e.srcId == 1).take(1000)
     val Edr = filtered_graph.reverse.edges.collect().filter(e => e.dstId == 1).take(1000)
 
+
     print("Edges from id 1: ", Ed.mkString("\n"), "Edges from id 1 reversed", Edr.mkString("\n"))
     val size = filtered_graph.vertices.collect().length
     val r = scala.util.Random
@@ -22,6 +23,11 @@ object DegreeHeuristicsPregelTest {
     var not_found_paths = 0
     val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
     val core_ids = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
+
+    val result = heuristic_sssp_pregel(filtered_graph,1,1,10,core_ids)
+    println("src = 1 and dst = 1", result)
+    val result2 = heuristic_sssp_pregel(filtered_graph,1,684,10,core_ids)
+    println("src = 1 and dst = 684", result2)
 
     //Search for a node that has a reasonable connection
     do {
