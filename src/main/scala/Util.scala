@@ -580,6 +580,7 @@ object Util {
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
+          println(s"Adding the following nodes from current path: ${current_path.toString()}")
           current_path.foreach(v => src2core += v)
           src2core += neighbored_cores(0).dstId
         } else {
@@ -639,6 +640,7 @@ object Util {
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
+          println(s"Adding the following nodes from current path: ${current_path.toString()}")
           current_path.foreach(v => dst2core += v)
           dst2core += neighbored_cores(0).dstId
         } else {
