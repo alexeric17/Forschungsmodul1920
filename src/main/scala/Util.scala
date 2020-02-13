@@ -593,7 +593,7 @@ object Util {
         } else {
           //Nothing found here - add next nodes
           current_neighborhood
-            .filter(e => !queue.contains((e.dstId, _: ListBuffer[VertexId])))
+            .filter(e => !queue.toMap.contains(e.dstId))
             .take(n)
             .foreach(e => queue.enqueue((e.dstId, current_path)))
         }
@@ -660,7 +660,7 @@ object Util {
         } else {
           //Nothing found here - add next nodes
           current_neighborhood
-            .filter(e => !queue.contains((e.dstId, _: ListBuffer[VertexId])))
+            .filter(e => !queue.toMap.contains(e.dstId))
             .take(n)
             .foreach(e => queue.enqueue((e.dstId, current_path)))
         }
