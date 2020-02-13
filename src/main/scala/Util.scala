@@ -563,6 +563,9 @@ object Util {
         val current_path = current._2
         current_path += current_id
 
+        println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
+
+
         visited_nodes += current_id
 
         val current_neighborhood = edges.filter(e => (e.srcId == current_id) && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
@@ -577,9 +580,13 @@ object Util {
         })
 
         //Check if any core node is in current neighborhood
-        val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
+        val neighbored_cores = current_neighborhood
+          .distinct
+          .filter(e => core_nodes.contains(e.dstId))
+
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
+          println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toList.toString()}")
           current_path.foreach(v => src2core += v)
           src2core += neighbored_cores(0).dstId
         } else {
@@ -602,8 +609,8 @@ object Util {
       dst2core += dst_id
     } else {
       val reversed_g = graph.reverse
-      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id, title, deg) => deg.getOrElse(0))
-      val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
+      val rev_g_inDeg = reversed_g.outerJoinVertices(reversed_g.inDegrees)((id, title, deg) => deg.getOrElse(0))
+      val reversed_graph = rev_g_inDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
       queue.clear()
       visited_nodes.clear()
@@ -619,13 +626,19 @@ object Util {
         current_path += current_id
         visited_nodes += current_id
 
+        println(s"[${Calendar.getInstance().getTime}] Dequeuing node with id $current_id and current path ${current_path.toList.toString()}")
+
         val current_neighborhood = edges_rev.filter(e => e.srcId == current_id && (!visited_nodes.contains(e.dstId))).sortBy(-_.attr)
 
         //Check if any node in current neighborhood is part of src2core
-        val neighbored_path_nodes = current_neighborhood.filter(e => src2core.contains(e.dstId))
+        val neighbored_path_nodes = current_neighborhood
+          .distinct
+          .filter(e => src2core.contains(e.dstId))
+
         if (neighbored_path_nodes.nonEmpty) {
           //Found connection to src2core path - end computation and return found path
-          val found_node = neighbored_path_nodes(1).dstId
+          println(s"[${Calendar.getInstance().getTime}] Found shortcut to node of src2core. Returning that path.")
+          val found_node = neighbored_path_nodes(0).dstId
           while (src2core.head != found_node) {
             result += src2core.head
             src2core.remove(0)
@@ -639,6 +652,7 @@ object Util {
         val neighbored_cores = current_neighborhood.filter(e => core_nodes.contains(e.dstId))
         if (neighbored_cores.nonEmpty) {
           println(s"[${Calendar.getInstance().getTime}] Found core node (id:${neighbored_cores(0).dstId}) in neighborhood of id $current_id")
+          println(s"[${Calendar.getInstance().getTime}] Adding the following nodes from current path: ${current_path.toString()}")
           current_path.foreach(v => dst2core += v)
           dst2core += neighbored_cores(0).dstId
         } else {
