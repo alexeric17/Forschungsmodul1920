@@ -9,7 +9,7 @@ object DegreeHeuristicsPregelTest {
     val filtered_graph = get_filtered_graph()
     val Ed = filtered_graph.edges.collect().filter(e => e.srcId == 1).take(10)
     val Edr = filtered_graph.reverse.edges.collect().filter(e => e.dstId == 1).take(10)
-    print("Edges from id 1: ", Ed, "Edges from id 1 reversed", Edr)
+    print("Edges from id 1: ", Ed.mkString("\n"), "Edges from id 1 reversed", Edr.mkString("\n"))
     val size = filtered_graph.vertices.collect().length
     val r = scala.util.Random
 
