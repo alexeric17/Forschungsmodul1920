@@ -747,6 +747,7 @@ object Util {
           val path = triplet.srcAttr._2
           path(dst_id)
           println("PATH FOUND WHEN TRAVERSING from SRC.")
+          Iterator.empty
           return path
         }
           //If neigh is a core node.
@@ -785,7 +786,7 @@ object Util {
     val initGraph1: Graph[(Double, List[VertexId]), Double] =
       annotated_rev_graph.mapVertices((id, _) => if (id == dst_id) (0.0, List[VertexId](dst_id)) else (Double.PositiveInfinity, List[VertexId]()))
 
-    val srcSSSP1 = initGraph1.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
+    val dstSSSP = initGraph1.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
       (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
       triplet => {
@@ -796,6 +797,7 @@ object Util {
           val path = triplet.srcAttr._2
           path(src_id)
           println("PATH FOUND WHEN TRAVERSING from DST")
+          Iterator.empty
           return path
         }
         //If neigh is a core node.
@@ -825,13 +827,13 @@ object Util {
 
     println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids. LAST STEP OF CODE $src_core and $dst_core")
 
-    val core_connection = core_paths
+    val core_connection1 = core_paths
       .toDF()
       .select("path")
       .where(s"src=$src_core and dst=$dst_core")
       .rdd
 
-    val core_connection_list = core_connection
+    val core_connection_list = core_connection1
       .first()
       .getList[Long](0)
       .toList
