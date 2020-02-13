@@ -626,7 +626,8 @@ object Util {
         val neighbored_path_nodes = current_neighborhood.filter(e => src2core.contains(e.dstId))
         if (neighbored_path_nodes.nonEmpty) {
           //Found connection to src2core path - end computation and return found path
-          val found_node = neighbored_path_nodes(1).dstId
+          println(s"[${Calendar.getInstance().getTime}] Found shortcut to node of src2core. Returning that path.")
+          val found_node = neighbored_path_nodes(0).dstId
           while (src2core.head != found_node) {
             result += src2core.head
             src2core.remove(0)
