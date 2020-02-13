@@ -7,8 +7,10 @@ import scala.collection.mutable.ListBuffer
 object DegreeHeuristicsPregelTest {
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
-    val Ed = filtered_graph.edges.collect().filter(e => e.srcId == 1).take(10)
-    val Edr = filtered_graph.reverse.edges.collect().filter(e => e.dstId == 1).take(10)
+
+    val Ed = filtered_graph.edges.collect().filter(e => e.srcId == 1).take(1000)
+    val Edr = filtered_graph.reverse.edges.collect().filter(e => e.dstId == 1).take(1000)
+
     print("Edges from id 1: ", Ed.mkString("\n"), "Edges from id 1 reversed", Edr.mkString("\n"))
     val size = filtered_graph.vertices.collect().length
     val r = scala.util.Random
