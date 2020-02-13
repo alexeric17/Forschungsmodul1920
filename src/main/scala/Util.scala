@@ -707,6 +707,7 @@ object Util {
     val annotated_graph = degreeHeurstics(graph)
     val edges1 = annotated_graph.edges.collect()
     val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
+
     var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
@@ -721,15 +722,17 @@ object Util {
 
     if (!core_nodes.contains(src_id)) {
       println(s"[${Calendar.getInstance().getTime}] Computing first half of heurstics")
+      edges1.filter(e => e.srcId == src_id).foreach(e => println(s"(${e.srcId}, ${e.dstId}): ${e.attr}"))
       val sssp = initGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
 
         triplet => {
+          val edi = edges1.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n)
           //Shortest Path or Core Node found
           if (shortestPath.nonEmpty || src2core.nonEmpty) {
             Iterator.empty
             //Destination in my neighborhood
-          } else if (triplet.dstId == dst_id) {
+          } else if (triplet.dstId.toInt == dst_id) {
             triplet.srcAttr._2.foreach(v => shortestPath.append(v))
             shortestPath.append(dst_id)
             Iterator.empty
@@ -739,7 +742,7 @@ object Util {
             src2core += triplet.dstId
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
-          } else if (edges1.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          } else if (edi.contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
@@ -754,8 +757,10 @@ object Util {
     }
 
     if (shortestPath.nonEmpty) {
+      println("SP found in first half. Returning: ",shortestPath)
       return shortestPath.toList
     }
+    println("src2core length is :",src2core.length, "src2core content is :", src2core.length)
 
     if (!core_nodes.contains(dst_id)) {
 
@@ -772,6 +777,8 @@ object Util {
       val sssp_reversed = initReversedGraph.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
         (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
         triplet => {
+
+          val edi2 = edges_rev.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n)
           if (dst2core.nonEmpty) {
             //Core Node found
             Iterator.empty
@@ -780,13 +787,13 @@ object Util {
             dst2core += triplet.dstId
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
-          } else if (triplet.dstId == src_id) {
+          } else if (triplet.dstId.toInt == src_id) {
             triplet.srcAttr._2.foreach(v => shortestPath.append(v))
             shortestPath.append(src_id)
             shortestPath.reverse
             Iterator.empty
           }
-          else if (edges_rev.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          else if (edi2.contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
