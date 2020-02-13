@@ -689,7 +689,7 @@ object Util {
     //n is how many of highest outDeg neighbours we take.
     //Initiallize the graph.
     val annotated_graph = degreeHeurstics(graph)
-    val edges = annotated_graph.edges.collect()
+    val edges1 = annotated_graph.edges.collect()
     val dstNode = annotated_graph.vertices.filter(v => v._1 == dst_id).collect().take(1)
     var shortestPath = ListBuffer[VertexId]()
     var src2core = ListBuffer[VertexId]()
@@ -723,7 +723,7 @@ object Util {
             src2core += triplet.dstId
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
-          } else if (edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          } else if (edges1.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
@@ -731,18 +731,20 @@ object Util {
         },
         (a, b) => if (a._1 < b._1) a else b)
 
-      if (shortestPath.nonEmpty) {
-        return shortestPath.toList
-      }
+
     } else {
       println(s"[${Calendar.getInstance().getTime}] Skipped first half of heurstics - $src_id is already in the core")
       src2core += src_id
     }
 
+    if (shortestPath.nonEmpty) {
+      return shortestPath.toList
+    }
+
     if (!core_nodes.contains(dst_id)) {
 
       val reversed_g = graph.reverse
-      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.outDegrees)((id, title, deg) => deg.getOrElse(0))
+      val rev_g_outDeg = reversed_g.outerJoinVertices(reversed_g.inDegrees)((id, title, deg) => deg.getOrElse(0))
       val reversed_graph = rev_g_outDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
 
@@ -762,7 +764,13 @@ object Util {
             dst2core += triplet.dstId
             Iterator.empty
             //Look at top n neighbours, see if any of them has not been visited yet
-          } else if (edges_rev.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
+          } else if (triplet.dstId == src_id) {
+            triplet.srcAttr._2.foreach(v => shortestPath.append(v))
+            shortestPath.append(src_id)
+            shortestPath.reverse
+            Iterator.empty
+          }
+          else if (edges_rev.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1))) {
             Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
           } else {
             Iterator.empty
@@ -772,6 +780,10 @@ object Util {
     } else {
       println(s"[${Calendar.getInstance().getTime}] Skipped second half of heurstics - $dst_id is already in the core")
       dst2core += dst_id
+    }
+
+    if (shortestPath.nonEmpty) {
+      return shortestPath.toList
     }
 
     if (src2core.isEmpty || dst2core.isEmpty) {
