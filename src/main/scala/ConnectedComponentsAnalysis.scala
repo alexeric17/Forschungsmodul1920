@@ -7,7 +7,7 @@ object ConnectedComponentsAnalysis {
 
   def main(args: Array[String]): Unit = {
     val components = subgraphs_from_connected_components(filtered_graph)
-    val ordered_components = components.sortBy(c => c.size)
+    val ordered_components = components.sortBy(c => -c.size)
     for ((component, i) <- ordered_components.view.zipWithIndex) {
       val subgraph = create_subgraph_from_cc(filtered_graph, component)
       val nr_nodes = subgraph.vertices.collect().length.toFloat
