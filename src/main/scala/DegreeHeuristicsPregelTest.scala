@@ -22,15 +22,15 @@ object DegreeHeuristicsPregelTest {
     val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
     val core_ids = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
 
-    val result = h_sssp_pregel_graph(filtered_graph,1,1,10,core_ids)
+    val result = run_h_sssp_pregel_graph(filtered_graph,1,1,10,core_ids)
     println("src = 1 and dst = 1", result)
-    val result2 = h_sssp_pregel_graph(filtered_graph,1,684,10,core_ids)
+    val result2 = run_h_sssp_pregel_graph(filtered_graph,1,684,10,core_ids)
     println("src = 1 and dst = 684", result2)
-    val result3 = h_sssp_pregel_graph(filtered_graph,1,6311,10,core_ids)
+    val result3 = run_h_sssp_pregel_graph(filtered_graph,1,6311,10,core_ids)
     println("src = 1 and dst = 6311", result3)
-    val result4 = h_sssp_pregel_graph(filtered_graph,1,416126,10,core_ids)
+    val result4 = run_h_sssp_pregel_graph(filtered_graph,1,416126,10,core_ids)
     println("src = 1 and dst = 416126", result4)
-    val result5 = h_sssp_pregel_graph(filtered_graph,1,28019,10,core_ids)
+    val result5 = run_h_sssp_pregel_graph(filtered_graph,1,28019,10,core_ids)
     println("src = 1 and dst = 416126", result5)
 /*
     //Search for a node that has a reasonable connection

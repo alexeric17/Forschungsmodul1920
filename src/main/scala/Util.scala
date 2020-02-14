@@ -700,6 +700,21 @@ object Util {
 
     result.toList
   }
+  def run_h_sssp_pregel_graph(graph : Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
+
+    var runDst = None
+
+    val runSrc = h_sssp_pregel_graph(graph,src_id,dst_id,n,core_nodes)
+    //path not found.
+    if (!(runSrc.contains(src_id) && runSrc.contains(dst_id))) {
+      val rev_graph = graph.reverse
+      runDst = (rev_graph, dst_id, src_id, n, core_nodes)
+    }
+    println("src path found: " , runSrc)
+    println("dst path found: ", runDst)
+
+    return ( runSrc + runDst).toList
+  }
   def h_sssp_pregel_graph(graph : Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
     //Apply outDeg on Edges
     val annotated_graph = degreeHeurstics(graph)
@@ -747,7 +762,6 @@ object Util {
           val path = triplet.srcAttr._2
           path(dst_id)
           println("PATH FOUND WHEN TRAVERSING from SRC.")
-          Iterator.empty
           return path
         }
           //If neigh is a core node.
@@ -767,84 +781,7 @@ object Util {
       },
       (a,b) => if(a._1 < b._1) a else b)
 
-    //DST PART
-    //
-    //
-    //
-    //
-
-    //Reverse graph
-    val rev_graph = graph.reverse
-    //Calculate inDegree instead. Now from dst we have reversed all paths.
-    val g_degIn = graph.outerJoinVertices(graph.inDegrees)((id, title, deg) => deg.getOrElse(0))
-    val annotated_rev_graph = g_degIn.mapTriplets(e => e.dstAttr.toDouble)
-    val rev_edge = annotated_rev_graph.edges.collect()
-
-    val dst2core = ListBuffer[VertexId]()
-
-    //Init search from SRC to core and dst.
-    val initGraph1: Graph[(Double, List[VertexId]), Double] =
-      annotated_rev_graph.mapVertices((id, _) => if (id == dst_id) (0.0, List[VertexId](dst_id)) else (Double.PositiveInfinity, List[VertexId]()))
-
-    val dstSSSP = initGraph1.pregel((Double.PositiveInfinity, List[VertexId]()), Int.MaxValue, EdgeDirection.Out)(
-      (id, attr, msg) => if (msg._1 < attr._1) msg else attr,
-
-      triplet => {
-        //Find edge for triplet SRC node. Sort it by degree.
-        val edgesAtNode1 = edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList
-        //If DST id is neig to the node. Return path
-        if(triplet.dstId == src_id){
-          val path = triplet.srcAttr._2
-          path(src_id)
-          println("PATH FOUND WHEN TRAVERSING from DST")
-          Iterator.empty
-          return path
-        }
-        //If neigh is a core node.
-        else if(core_nodes.contains(triplet.dstId))
-        {
-          triplet.srcAttr._2.foreach(v => src2core.append(v))
-          dst2core.append(triplet.dstId)
-          Iterator.empty
-        }
-        //Take n neighbours with highest Deg. Activate and continue.
-        else if(edgesAtNode1.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1)) && dst2core.nonEmpty) {
-          Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
-        }
-        else{
-          Iterator.empty
-        }
-      },
-      (a,b) => if(a._1 < b._1) a else b)
-
-
-    //Reasemble path.
-
-    val src_core = src2core.last
-    val dst_core = dst2core.last
-    println("src2core contains path: ", src2core)
-    println("dst2core contains path: ", dst2core)
-
-    println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids. LAST STEP OF CODE $src_core and $dst_core")
-
-    val core_connection1 = core_paths
-      .toDF()
-      .select("path")
-      .where(s"src=$src_core and dst=$dst_core")
-      .rdd
-
-    val core_connection_list = core_connection1
-      .first()
-      .getList[Long](0)
-      .toList
-
-    var result = ListBuffer[Long]()
-    result = result ++ src2core
-    core_connection_list.foreach(v => result += v)
-    result ++ dst2core.reverse
-
-    result.toList.distinct
-
+    return src2core.toList
   }
 
   def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
