@@ -34,7 +34,7 @@ object DegreeHeuristicsTest {
     interesting_node_groups.foreach(g => println(s"Length ${g._1}: ${g._2.length} Occurences"))
     println(s"Average Pathlength: ${total_pathlength.toDouble / nr_interesting_nodes}")
 
-    for (nr_neighbors <- 3 to 10 by 1) {
+    for (nr_neighbors <- 1 to 100) {
       errors.clear()
       var not_found_paths = 0
       var runtimes = ListBuffer[Double]()
