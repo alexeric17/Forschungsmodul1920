@@ -13,9 +13,7 @@ object DegreeHeuristicsTest {
     var errors = new mutable.HashMap[Int, ListBuffer[Int]]
     var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
     var nr_interesting_nodes = 0
-    var runtimes = ListBuffer[Double]()
     var src_id = -1
-    var not_found_paths = 0
     val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
     val core_ids = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
 
@@ -37,11 +35,14 @@ object DegreeHeuristicsTest {
     println(s"Average Pathlength: ${total_pathlength.toDouble / nr_interesting_nodes}")
 
     for (nr_neighbors <- 3 to 10 by 1) {
+      errors.clear()
+      var not_found_paths = 0
+      var runtimes = ListBuffer[Double]()
+
       pathlengths.foreach(pathlength => {
         println(s"Samples of pathlength $pathlength :")
         val group = interesting_node_groups(pathlength)
         val sample = group.take(5)
-        not_found_paths = 0
         for (i <- 0 until math.min(9, sample.length - 1)) {
           val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
           val start = System.nanoTime()
