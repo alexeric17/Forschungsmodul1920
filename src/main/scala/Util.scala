@@ -780,10 +780,11 @@ object Util {
           val path = triplet.srcAttr._2
           path(dst_id)
           println("PATH FOUND WHEN TRAVERSING from SRC.")
-          return path
+          path.foreach(v => src2core.append(v))
+          Iterator.empty
         }
           //If neigh is a core node.
-        else if(core_nodes.contains(triplet.dstId))
+        else if(core_nodes.contains(triplet.dstId) && src2core.nonEmpty)
         {
           triplet.srcAttr._2.foreach(v => src2core.append(v))
           src2core.append(triplet.dstId)
