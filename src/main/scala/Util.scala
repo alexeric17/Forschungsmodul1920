@@ -680,18 +680,51 @@ object Util {
   }
   def run_h_sssp_pregel_graph(graph : Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
 
-    var runDst = None
-
     val runSrc = h_sssp_pregel_graph(graph,src_id,dst_id,n,core_nodes)
-    //path not found.
-    if (!(runSrc.contains(src_id) && runSrc.contains(dst_id))) {
-      val rev_graph = graph.reverse
-      runDst = (rev_graph, dst_id, src_id, n, core_nodes)
+    if(runSrc.contains(src_id) && runSrc.contains(dst_id)){
+      println("Src and dst found! :", runSrc)
+      return runSrc
     }
-    println("src path found: " , runSrc)
-    println("dst path found: ", runDst)
 
-    return ( runSrc + runDst).toList
+    //Last element should be a core node. Else we didnt find core.
+    if(core_nodes.contains(runSrc.last)) {
+      val rev_graph = graph.reverse
+      val runDst = h_sssp_pregel_graph(rev_graph, dst_id, src_id, n, core_nodes)
+      if(core_nodes.contains(runDst.last)){
+        //Cores is in both lists.
+
+        val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+
+        val src_core = runSrc.last
+        val dst_core = runDst.last
+
+        println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
+
+        val core_connection = core_paths
+          .toDF()
+          .select("path")
+          .where(s"src=$src_core and dst=$dst_core")
+          .rdd
+
+        val core_connection_list = core_connection
+          .first()
+          .getList[Long](0)
+          .toList
+
+        var result = ListBuffer[Long]()
+        result = result ++ runSrc
+        core_connection_list.foreach(v => result += v)
+        result ++ runDst.reverse
+
+        val result_list: List[Long] = result.toList.distinct
+
+        return result_list
+      }
+
+    }
+    return List[VertexId](-1)
+
+
   }
   def h_sssp_pregel_graph(graph : Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
     //Apply outDeg on Edges
@@ -708,17 +741,24 @@ object Util {
     if(core_nodes.contains(src_id) && core_nodes.contains(dst_id))
     {
       println("SRC_ID and DST_ID ARE CORE NODES")
+      val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+      val src_core = src_id
+      val dst_core = dst_id
+
+      println(s"[${Calendar.getInstance().getTime}] Looking for shortest path between core ids $src_core and $dst_core")
+
       val core_connection = core_paths
         .toDF()
         .select("path")
-        .where(s"src=$src_id and dst=$dst_id")
+        .where(s"src=$src_core and dst=$dst_core")
         .rdd
 
-      val path = core_connection
+      val core_connection_list = core_connection
         .first()
         .getList[Long](0)
         .toList
-      return path
+
+     return core_connection_list
     }
 
     val edges = graph.edges.collect()
