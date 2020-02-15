@@ -402,8 +402,8 @@ object Util {
       .as[(VertexId, Double)]
       .rdd
 
-    val g_pagerank = graph.outerJoinVertices(pageranks)((id_, title, pagerank) => pagerank.getOrElse(0))
-    val updatedG = g_pagerank.mapTriplets(e => e.dstAttr)
+    val g_pagerank: Graph[Double, Double] = graph.outerJoinVertices(pageranks)((id_, title, pagerank) => pagerank.getOrElse(0))
+    val updatedG: Graph[Double, Double] = g_pagerank.mapTriplets(e => e.dstAttr)
     updatedG
   }
 
