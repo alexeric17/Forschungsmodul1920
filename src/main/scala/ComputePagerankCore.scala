@@ -17,19 +17,20 @@ object ComputePagerankCore {
       .distinct
       .as[(VertexId, Double)]
       .collect()
-      .toMap
       .filter(v => biggest_component.contains(v._1))
+      .sortBy(v => -v._2)
+      .take(1000)
 
-    val core_node_ids = core_nodes.keys.toList.sortBy(v => -v)
+    val core_node_ids = core_nodes.map(n => n._1)
 
     var iteration = 0
-    core_node_ids.foreach(v => {
+    core_nodes.foreach(v => {
       iteration += 1
       val start = System.nanoTime()
-      val paths = shortest_path_pregel(filtered_graph, v.toInt)
+      val paths = shortest_path_pregel(filtered_graph, v._1.toInt)
       println(s"Done computing after ${(System.nanoTime() - start) / 1000 / 1000} ms")
       paths
-        .filter(v => core_node_ids.contains(v._1) && v._2._2.nonEmpty)
+        .filter(p => core_node_ids.contains(p._1) && p._2._2.nonEmpty)
         .foreach(v => result.append((v._2._2.head, v._2._2.last, v._2._2)))
 
       if (iteration == 100 || (iteration > 100 && iteration % 10 == 0)) {
