@@ -398,7 +398,7 @@ object Util {
   }
 
   def pagerankHeuristics(graph: Graph[String, Double]): Graph[Double, Double] = {
-    val pageranks = spark.read.json(dataDir + "/core_pagerank/core_pagerank.json")
+    val pageranks = spark.read.json(pagerankFile)
       .as[(VertexId, Double)]
       .rdd
 
@@ -544,7 +544,7 @@ object Util {
     core_connection.toList
   }
 
-  def heuristics_sssp(annotated_graph: Graph[Double, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
+  def heuristics_sssp(annotated_graph: Graph[Double, Double], src_id: Int, dst_id: Int, n: Int, path_to_core_dataframe: String): List[VertexId] = {
     val edges = annotated_graph.edges.collect()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
@@ -555,6 +555,9 @@ object Util {
     if (src_id == dst_id) {
       return List[VertexId](src_id)
     }
+
+    val core = spark.read.json(path_to_core_dataframe).toDF()
+    val core_nodes = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
 
     if (core_nodes.contains(src_id)) {
       src2core += src_id
@@ -661,7 +664,7 @@ object Util {
       return List()
     }
 
-    val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
+    val core_paths = spark.read.json(path_to_core_dataframe)
     val src_core = src2core.last
     val dst_core = dst2core.last
 

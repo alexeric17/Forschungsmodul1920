@@ -16,8 +16,6 @@ object DegreeHeuristicsTest {
     var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
     var nr_interesting_nodes = 0
     var src_id = -1
-    val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
-    val core_ids = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
 
     //Search for a node that has a reasonable connection
     do {
@@ -48,7 +46,7 @@ object DegreeHeuristicsTest {
         for (i <- 0 until math.min(9, sample.length - 1)) {
           val inEdgesDst = annotated_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
           val start = System.nanoTime()
-          val prediction = heuristics_sssp(annotated_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
+          val prediction = heuristics_sssp(annotated_graph, src_id, sample(i)._1.toInt, nr_neighbors, dataDir + "/core_degrees/core_degrees.json")
           val runtime = (System.nanoTime() - start) / 1000 / 1000
           runtimes += runtime
           println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + runtime + "ms")
