@@ -265,7 +265,7 @@ object Util {
 
 
   def create_subgraph_from_cc(graph: Graph[String, Double], subGraphItr: Iterable[VertexId]): Graph[String, Double] = {
-    println(s"[${Calendar.getInstance().getTime()}] Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
+    println(s"[${Calendar.getInstance().getTime}] Called create_subgraph_from_cc for subgraph of size ${subGraphItr.size}")
     //Paramters original graph and subGraph
 
     //1. Get List of all vertex ids.
@@ -390,10 +390,20 @@ object Util {
     GraphFrame(filteredNodesDF, filteredEdgesDF)
   }
 
-  def degreeHeurstics(graph: Graph[String, Double]): Graph[Int, Double] = {
+  def degreeHeurstics(graph: Graph[String, Double]): Graph[Double, Double] = {
     //1. Get outDegree for each vertex (Id,outdegree)
-    val g_degOut = graph.outerJoinVertices(graph.outDegrees)((id, title, deg) => deg.getOrElse(0))
-    val updatedG = g_degOut.mapTriplets(e => e.dstAttr.toDouble)
+    val g_degOut = graph.outerJoinVertices(graph.outDegrees)((id, title, deg) => deg.getOrElse(0).toDouble)
+    val updatedG = g_degOut.mapTriplets(e => e.dstAttr)
+    updatedG
+  }
+
+  def pagerankHeuristics(graph: Graph[String, Double]): Graph[Double, Double] = {
+    val pageranks = spark.read.json(dataDir + "/core_pagerank/core_pagerank.json")
+      .as[(VertexId, Double)]
+      .rdd
+
+    val g_pagerank = graph.outerJoinVertices(pageranks)((id_, title, pagerank) => pagerank.getOrElse(0))
+    val updatedG = g_pagerank.mapTriplets(e => e.dstAttr)
     updatedG
   }
 
@@ -451,7 +461,7 @@ object Util {
     val updatedGraph = graph.mapVertices((id, attr) => if (id == currentId && (attr._2 == Double.PositiveInfinity || attr._2 > distance)) (cameFrom, distance) else (attr._1, attr._2))
 
     //3. Find neighbors for current ID.
-    val neighbors = graph.edges.collect().filter(e => (e.srcId == currentId))
+    val neighbors = graph.edges.collect().filter(e => e.srcId == currentId)
 
 
     //4. Get top 3 outDeg neighbors.
@@ -461,7 +471,7 @@ object Util {
     //If dst is found in list return. But dst might be found
     if (sortNeighbors.contains(dst)) {
       //Return the last call.
-      return (runShortestPath_deg(updatedGraph, dst, dst, currentId, distance + 1.0, nr_neighbors))
+      return runShortestPath_deg(updatedGraph, dst, dst, currentId, distance + 1.0, nr_neighbors)
     }
 
     //4. Get top 3 outDeg neighbors.
@@ -534,8 +544,7 @@ object Util {
     core_connection.toList
   }
 
-  def heuristics_sssp(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
-    val annotated_graph = degreeHeurstics(graph)
+  def heuristics_sssp(annotated_graph: Graph[Double, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
     val edges = annotated_graph.edges.collect()
     var src2core = ListBuffer[VertexId]()
     var dst2core = ListBuffer[VertexId]()
@@ -597,7 +606,7 @@ object Util {
     if (core_nodes.contains(dst_id)) {
       dst2core += dst_id
     } else {
-      val reversed_g = graph.reverse
+      val reversed_g = annotated_graph.reverse
       val rev_g_inDeg = reversed_g.outerJoinVertices(reversed_g.inDegrees)((id, title, deg) => deg.getOrElse(0))
       val reversed_graph = rev_g_inDeg.mapTriplets(e => e.dstAttr.toDouble)
       val edges_rev = reversed_graph.edges.collect()
@@ -678,19 +687,20 @@ object Util {
 
     result.toList
   }
-  def run_h_sssp_pregel_graph(graph : Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
 
-    val runSrc = h_sssp_pregel_graph(graph,src_id,dst_id,n,core_nodes)
-    if(runSrc.contains(src_id) && runSrc.contains(dst_id)){
+  def run_h_sssp_pregel_graph(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
+
+    val runSrc = h_sssp_pregel_graph(graph, src_id, dst_id, n, core_nodes)
+    if (runSrc.contains(src_id) && runSrc.contains(dst_id)) {
       println("Src and dst found! :", runSrc)
       return runSrc
     }
 
     //Last element should be a core node. Else we didnt find core.
-    if(core_nodes.contains(runSrc.last)) {
+    if (core_nodes.contains(runSrc.last)) {
       val rev_graph = graph.reverse
       val runDst = h_sssp_pregel_graph(rev_graph, dst_id, src_id, n, core_nodes)
-      if(core_nodes.contains(runDst.last)){
+      if (core_nodes.contains(runDst.last)) {
         //Cores is in both lists.
 
         val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
@@ -722,24 +732,23 @@ object Util {
       }
 
     }
-    return List[VertexId](-1)
+    List[VertexId](-1)
 
 
   }
-  def h_sssp_pregel_graph(graph : Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
+
+  def h_sssp_pregel_graph(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
     //Apply outDeg on Edges
     val annotated_graph = degreeHeurstics(graph)
     val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
 
     //If src == dst
-    if(src_id == dst_id)
-    {
+    if (src_id == dst_id) {
       println("SRC_ID == DST_ID")
-      return List[VertexId](src_id,dst_id)
+      return List[VertexId](src_id, dst_id)
     }
     //If src and dst are core nodes.
-    if(core_nodes.contains(src_id) && core_nodes.contains(dst_id))
-    {
+    if (core_nodes.contains(src_id) && core_nodes.contains(dst_id)) {
       println("SRC_ID and DST_ID ARE CORE NODES")
       val core_paths = spark.read.json(dataDir + "/core_degrees/core_degrees.json")
       val src_core = src_id
@@ -758,7 +767,7 @@ object Util {
         .getList[Long](0)
         .toList
 
-     return core_connection_list
+      return core_connection_list
     }
 
     val edges = graph.edges.collect()
@@ -776,31 +785,30 @@ object Util {
         val edgesAtNode = edges.filter(e => e.srcId == triplet.srcId).sortBy(e => -e.attr).map(e => e.dstId).toList
 
         //If DST id is neig to the node. Return path
-        if(triplet.dstId == dst_id){
+        if (triplet.dstId == dst_id) {
           val path = triplet.srcAttr._2
           println("PATH FOUND WHEN TRAVERSING from SRC.")
           path.foreach(v => src2core.append(v))
           src2core.append(dst_id)
           Iterator.empty
         }
-          //If neigh is a core node.
-        else if(core_nodes.contains(triplet.dstId) && src2core.nonEmpty)
-        {
+        //If neigh is a core node.
+        else if (core_nodes.contains(triplet.dstId) && src2core.nonEmpty) {
           triplet.srcAttr._2.foreach(v => src2core.append(v))
           src2core.append(triplet.dstId)
           Iterator.empty
         }
-          //Take n neighbours with highest Deg. Activate and continue.
-        else if(edgesAtNode.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1)) && src2core.nonEmpty) {
+        //Take n neighbours with highest Deg. Activate and continue.
+        else if (edgesAtNode.take(n).contains(triplet.dstId) && (triplet.srcAttr._1 < (triplet.dstAttr._1 - 1)) && src2core.nonEmpty) {
           Iterator((triplet.dstId, (triplet.srcAttr._1 + 1, triplet.srcAttr._2 :+ triplet.dstId)))
         }
-        else{
+        else {
           Iterator.empty
         }
       },
-      (a,b) => if(a._1 < b._1) a else b)
+      (a, b) => if (a._1 < b._1) a else b)
 
-    return src2core.toList
+    src2core.toList
   }
 
   def heuristic_sssp_pregel(graph: Graph[String, Double], src_id: Int, dst_id: Int, n: Int, core_nodes: List[Int]): List[VertexId] = {
@@ -816,8 +824,7 @@ object Util {
     if (src_id == dst_id) {
       return List[VertexId](src_id)
     }
-    if(edges1.filter(e => e.srcId == src_id).map(e => e.dstId).contains(dst_id))
-    {
+    if (edges1.filter(e => e.srcId == src_id).map(e => e.dstId).contains(dst_id)) {
       shortestPath.append(src_id)
       shortestPath.append(dst_id)
       return shortestPath.toList

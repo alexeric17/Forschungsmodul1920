@@ -7,7 +7,9 @@ import scala.collection.mutable.ListBuffer
 object DegreeHeuristicsTest {
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
-    val size = filtered_graph.vertices.collect().length
+    val annotated_graph = degreeHeurstics(filtered_graph)
+
+    val size = annotated_graph.vertices.collect().length
     val r = scala.util.Random
 
     var errors = new mutable.HashMap[Int, ListBuffer[Int]]
@@ -19,7 +21,7 @@ object DegreeHeuristicsTest {
 
     //Search for a node that has a reasonable connection
     do {
-      src_id = filtered_graph.vertices.collect()(math.abs(r.nextInt() % size))._1.toInt //random node
+      src_id = annotated_graph.vertices.collect()(math.abs(r.nextInt() % size))._1.toInt //random node
       val ground_truth = shortest_path_pregel(filtered_graph, src_id)
 
       interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty).map(v => (v._1, v._2)).toList
@@ -44,9 +46,9 @@ object DegreeHeuristicsTest {
         val group = interesting_node_groups(pathlength)
         val sample = group.take(5)
         for (i <- 0 until math.min(9, sample.length - 1)) {
-          val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
+          val inEdgesDst = annotated_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
           val start = System.nanoTime()
-          val prediction = heuristics_sssp(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
+          val prediction = heuristics_sssp(annotated_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
           val runtime = (System.nanoTime() - start) / 1000 / 1000
           runtimes += runtime
           println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + runtime + "ms")
