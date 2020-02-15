@@ -35,8 +35,11 @@ object ComputePagerankCore {
 
       if (iteration == 100 || (iteration > 100 && iteration % 10 == 0)) {
         println(s"Percentage of found paths between core after $iteration iterations: ${result.length.toDouble / 10000}")
-        result.filter(t => core_node_ids.take(iteration).contains(t._1) && core_node_ids.take(iteration).contains(t._2))
-          .toDF("src", "dst", "path").coalesce(1).write.json(dataDir + s"/core_degrees/$iteration")
+        result
+          .filter(t => core_node_ids.take(iteration).contains(t._1) && core_node_ids.take(iteration).contains(t._2))
+          .toDF("src", "dst", "path")
+          .coalesce(1)
+          .write.json(dataDir + s"/core_pagerank/$iteration")
       }
     })
   }
