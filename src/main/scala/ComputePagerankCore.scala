@@ -8,6 +8,8 @@ object ComputePagerankCore {
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
     var result = ListBuffer[(VertexId, VertexId, List[VertexId])]()
+    val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => -c.size)
+    val biggest_component = connected_components(0).toSet
 
     val pageranks = spark.read.json(pagerankFile)
 
@@ -16,6 +18,7 @@ object ComputePagerankCore {
       .as[(VertexId, Double)]
       .collect()
       .toMap
+      .filter(v => biggest_component.contains(v._1))
 
     val core_node_ids = core_nodes.keys.toList.sortBy(v => -v)
 
