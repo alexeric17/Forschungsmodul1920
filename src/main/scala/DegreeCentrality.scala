@@ -17,12 +17,12 @@ object DegreeCentrality {
 
     //Get verticies.
     val verticies = subGraph.vertices.collect()
-    val subGraphVerticies = verticies.map(x => x._1)
+    val subGraphVerticies = verticies.map(x => x._1.toInt).toList
     val size = verticies.length
     println("Number of verticies in subGraph ", size)
 
     //Collect 1000 random nodes from subGraph.
-    var randomNodesBuffer = ListBuffer[Int]()
+    val randomNodesBuffer = ListBuffer[Int]()
     val r = scala.util.Random
     println("Collecting 1000 random nodes")
     for(n <- 0 until 1000) {
@@ -46,6 +46,7 @@ object DegreeCentrality {
     //For all random nodes in subGraph.
     for(next <- randomNodes){
       //Make sure we keep only nodes from the connected component at each iteration.
+      println("Now looking at node: "+ next + "\n")
       val sssp1 = most_seen_vertex_sssp_pregel(filtered_graph,next)
       //Update result.
       sssp1.foreach(node => result.update(node._1,result.getOrElse(node._1,0) + node._2))
@@ -53,7 +54,7 @@ object DegreeCentrality {
       if((i >= 50) && (i%50 == 0)) {
         val sortedResult = result.toSeq
         println(s"50 nodes at iteration: $i " ,sortedResult.take(50).mkString("\n"))
-        spark.sparkContext.parallelize(sortedResult).coalesce(1).saveAsTextFile(path + s"$i")
+        spark.sparkContext.parallelize(sortedResult).coalesce(1).saveAsTextFile(path + "/" + i.toString)
       }
       i += 1
     }
