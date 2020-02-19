@@ -217,7 +217,7 @@ object Util {
     //TODO Use filter to select specific path between two nodes.
   }
 
-  def most_seen_vertex_sssp_pregel(graph: Graph[String, Double], src_id: Int): Unit = {
+  def most_seen_vertex_sssp_pregel(graph: Graph[String, Double], src_id: Int): Map[VertexId,Int] = {
 
     //1. Calculate shortestpath to src given the graph G. sssp will be a collection of all vertices.
     val sssp = shortest_path_pregel(graph, src_id)
@@ -230,6 +230,8 @@ object Util {
 
     //5. Most seen node(s)
     val mostSeenNode = dictnodesSeen.maxBy(x => x._2)
+
+    dictnodesSeen
 
   }
 
