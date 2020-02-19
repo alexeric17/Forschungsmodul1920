@@ -25,7 +25,7 @@ object DegreeCentrality {
     val randomNodesBuffer = ListBuffer[Int]()
     val r = scala.util.Random
     println("Collecting 1000 random nodes")
-    for(n <- 0 until 1000) {
+    for(n <- 0 until 10000) {
       val r_node_id= verticies(math.abs(r.nextInt() % size))._1.toInt
       randomNodesBuffer.append(r_node_id)
     }
@@ -42,6 +42,8 @@ object DegreeCentrality {
     
     var i = 0
 
+    import spark.implicits._
+
     println("Calculating degreeCentrality")
     //For all random nodes in subGraph.
     for(next <- randomNodes){
@@ -52,13 +54,14 @@ object DegreeCentrality {
       sssp1.foreach(node => result.update(node._1,result.getOrElse(node._1,0) + node._2))
       println(s"Iteration $i\n")
       if((i >= 50) && (i%50 == 0)) {
-        val sortedResult = result.toSeq
+
+        val sortedResult = result.toSeq.toDF("id","times seen")
         println(s"50 nodes at iteration: $i " ,sortedResult.take(50).mkString("\n"))
-        spark.sparkContext.parallelize(sortedResult).coalesce(1).saveAsTextFile(path + "/" + i.toString)
+        sortedResult.coalesce(1).write.json(path + i.toString)
       }
       i += 1
     }
-    spark.sparkContext.parallelize(result.toSeq.filter(x => subGraphVerticies.contains(x._1))).coalesce(1)
+    val finalResult = result.filter(x => subGraphVerticies.contains(x._1)).toSeq.toDF("id","times seen").coalesce(1).write.json(path+"final")
 
     /*
     //TODO create a immutable map which can be sorted. BELOW.
