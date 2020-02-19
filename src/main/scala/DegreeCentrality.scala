@@ -13,20 +13,23 @@ object DegreeCentrality {
     //Get biggest connected components
     val bigConnectedComponent = subgraphs_from_connected_components(filtered_graph)(0)
     val subGraph = create_subgraph_from_cc(filtered_graph,bigConnectedComponent)
+    println("SubGraph done")
 
     //Get verticies.
     val verticies = subGraph.vertices.collect()
     val subGraphVerticies = verticies.map(x => x._1)
     val size = verticies.length
-    println("Number of verticies in subGraph: ", size)
+    println("Number of verticies in subGraph ", size)
 
     //Collect 1000 random nodes from subGraph.
     var randomNodesBuffer = ListBuffer[Int]()
     val r = scala.util.Random
+    println("Collecting 1000 random nodes")
     for(n <- 0 until 1000) {
       val r_node_id= verticies(math.abs(r.nextInt() % size))._1.toInt
       randomNodesBuffer.append(r_node_id)
     }
+    println("Nodes collected")
 
     //1000 random nodes from biggest subGraph.
     val randomNodes = randomNodesBuffer.toList
@@ -38,7 +41,8 @@ object DegreeCentrality {
     val result = collection.mutable.Map[VertexId,Int]()
     
     var i = 0
-    
+
+    println("Calculating degreeCentrality")
     //For all random nodes in subGraph.
     for(next <- randomNodes){
       //Make sure we keep only nodes from the connected component at each iteration.
