@@ -11,7 +11,7 @@ object DegreeCentrality {
     val filtered_graph = get_filtered_graph()
 
     //Get biggest connected components
-    val bigConnectedComponent = subgraphs_from_connected_components(filtered_graph)(1)
+    val bigConnectedComponent = subgraphs_from_connected_components(filtered_graph)(0)
     val subGraph = create_subgraph_from_cc(filtered_graph,bigConnectedComponent)
 
     //Get verticies.
