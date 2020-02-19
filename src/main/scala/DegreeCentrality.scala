@@ -57,7 +57,7 @@ object DegreeCentrality {
 
         val sortedResult = result.toSeq.toDF("id","times seen")
         println(s"50 nodes at iteration: $i " ,sortedResult.take(50).mkString("\n"))
-        sortedResult.coalesce(1).write.json(path + i.toString)
+        sortedResult.coalesce(1).write.json(dataDir + s"/degreeCentrality/$i")
       }
       i += 1
     }
