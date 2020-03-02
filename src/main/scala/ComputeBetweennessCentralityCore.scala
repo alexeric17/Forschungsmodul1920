@@ -19,7 +19,7 @@ object ComputeBetweennessCentralityCore {
       .collect()
       .filter(v => biggest_component.contains(v._1))
       .sortBy(v => -v._2)
-      .take(1000)
+      .take(5000)
 
     val core_node_ids = core_nodes.map(n => n._1)
 
