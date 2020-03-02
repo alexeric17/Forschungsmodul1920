@@ -19,6 +19,7 @@ object Util {
   val filteredNodeDir = dataDir + "/filtered_nodes"
   val filteredEdgeDir = dataDir + "/filtered_edges"
   val pagerankDir = dataDir + "/pageranks"
+  val betweennessCentralityDir = dataDir + "/betweenness_centrality"
 
   val nodeFile = nodeDir + "/nodes.json"
   val edgeFile = edgeDir + "/edges.json"
@@ -26,6 +27,7 @@ object Util {
   val filteredNodeFile = filteredNodeDir + "/filtered_nodes.json"
   val filteredEdgeFile = filteredEdgeDir + "/filtered_edges.json"
   val pagerankFile = pagerankDir + "/pageranks.json"
+  val betweennessCentralityFile = betweennessCentralityDir + "/betweenness_centrality.json"
 
   val spark = SparkSession
     .builder()
@@ -406,6 +408,16 @@ object Util {
 
     val g_pagerank: Graph[Double, Double] = graph.outerJoinVertices(pageranks)((id_, title, pagerank) => pagerank.getOrElse(0))
     val updatedG: Graph[Double, Double] = g_pagerank.mapTriplets(e => e.dstAttr)
+    updatedG
+  }
+
+  def betweennessCentralityHeuristics(graph: Graph[String, Double]): Graph[Double, Double] = {
+    val bc_values = spark.read.json(betweennessCentralityFile)
+      .as[(VertexId, Double)]
+      .rdd
+
+    val g_bc : Graph[Double, Double] = graph.outerJoinVertices(bc_values)((id_, title, bc_value) => bc_value.getOrElse(0))
+    val updatedG: Graph[Double, Double] = g_bc.mapTriplets(e => e.dstAttr)
     updatedG
   }
 
@@ -959,35 +971,5 @@ object Util {
     result ++ dst2core.reverse
 
     result.toList.distinct
-  }
-
-  //TODO finish (not yet usable)
-  def shortest_path_pagerank_heuristics(): Unit = {
-    //1 Create Graphframe, where each node is annotated with its pagerank
-    val filtered_nodes = spark.read.json(filteredNodeFile)
-      .select("id")
-    println(filtered_nodes.collect().length)
-    val filtered_edges = spark.read.json(filteredEdgeFile)
-    println(GraphFrame(filtered_nodes, filtered_edges).vertices.collect().mkString("\n"))
-    val pageranks = spark.read.json(pagerankFile)
-    val annotated_nodes = filtered_nodes.join(right = pageranks, usingColumns = Seq("id"), joinType = "full").na.fill(0.0)
-    val graph = GraphFrame(annotated_nodes, filtered_edges)
-    val reversed_graph = graph.toGraphX.reverse
-    println(reversed_graph.vertices.collect().length)
-
-    val initGraph2 = reversed_graph.mapVertices((id, row) => (row.getDouble(1), (-1, -1.0)))
-
-    val initiGraph2Pregel = initGraph2.pregel((-1, -1.0), 1, EdgeDirection.In)(
-      (id, attr, msg) => (attr._1, msg),
-
-      triplet => {
-        //send msg
-        Iterator((triplet.dstId, (triplet.srcId.toInt, triplet.srcAttr._1)))
-      },
-      (a, b) => if (a._2 > b._2) a else b
-    )
-    val annotated_graph = graph.toGraphX.reverse
-
-    println(annotated_graph.vertices.collect().mkString("\n"))
   }
 }
