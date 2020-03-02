@@ -27,7 +27,7 @@ object Util {
   val filteredNodeFile = filteredNodeDir + "/filtered_nodes.json"
   val filteredEdgeFile = filteredEdgeDir + "/filtered_edges.json"
   val pagerankFile = pagerankDir + "/pageranks.json"
-  val betweennessCentralityFile = betweennessCentralityDir + "/betweenness_centrality.json"
+  val cbetweennessCentralityFile = betweennessCentralityDir + "/betweenness_centrality.json"
 
   val spark = SparkSession
     .builder()

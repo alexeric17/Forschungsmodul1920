@@ -11,7 +11,7 @@ object ComputeBetweennessCentralityCore {
     val connected_components = subgraphs_from_connected_components(filtered_graph).sortBy(c => -c.size)
     val biggest_component = connected_components(0).toSet
 
-    val bc_values = spark.read.json(betweennessCentralityFile)
+    val bc_values = spark.read.json(betweenessCentralityFile)
 
     val core_nodes = bc_values
       .distinct

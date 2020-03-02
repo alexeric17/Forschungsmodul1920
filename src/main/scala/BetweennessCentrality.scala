@@ -3,7 +3,7 @@ import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable.ListBuffer
 
-object DegreeCentrality {
+object BetweennessCentrality {
   def main(args: Array[String]): Unit = {
 
 
@@ -37,14 +37,14 @@ object DegreeCentrality {
 
 
     //Run sssp on filtered full-graph but with nodes from the randomNodes (from subGraph).
-    val path = FM1920HOME + "/data/degreeCentrality/"
+    val path = FM1920HOME + "/data/betweenness_centrality/"
     val result = collection.mutable.Map[VertexId,Int]()
     
     var i = 0
 
     import spark.implicits._
 
-    println("Calculating degreeCentrality")
+    println("Calculating betweenness centrality")
     //For all random nodes in subGraph.
     for(next <- randomNodes){
       //Make sure we keep only nodes from the connected component at each iteration.
@@ -57,7 +57,7 @@ object DegreeCentrality {
 
         val sortedResult = result.toSeq.toDF("id","times seen")
         println(s"50 nodes at iteration: $i " ,sortedResult.take(50).mkString("\n"))
-        sortedResult.coalesce(1).write.json(dataDir + s"/degreeCentrality/$i")
+        sortedResult.coalesce(1).write.json(dataDir + s"/betweenness_centrality/$i")
       }
       i += 1
     }
