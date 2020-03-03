@@ -32,26 +32,22 @@ object ApproximateAveragePathlengths {
     val result = collection.mutable.Map[Int, Int]()
 
     var i = 1
-    for (sample <- randomNodes.grouped(10)) {
-      println(s"Looking at sample $i of 100")
-      i += 1
+    for (node <- randomNodes) {
+      println("Iteration $i")
+      i+=1
+      val annotated = shortest_path_pregel(filtered_graph, node.toInt)
 
-      val annotated = ShortestPaths.run(filtered_graph, sample)
-
-      for (v <- annotated.vertices.collect()) {
-        for (value <- v._2)
-          if (!result.contains(value._2)) {
-            result(value._2) = 1
-          } else {
-            result(value._2) += 1
-          }
+      for (v <- annotated) {
+        val pathlength = v._2._2.length
+        if (!result.contains(pathlength)) {
+          result(pathlength) = 1
+        } else {
+          result(pathlength) += 1
+        }
       }
     }
-
-
     for (key <- result.keys) {
-      println(s"Pathlength $key: ${result(key)}")
+      println(s"Pathlength $key: ${result(key).toFloat}")
     }
   }
-
 }
