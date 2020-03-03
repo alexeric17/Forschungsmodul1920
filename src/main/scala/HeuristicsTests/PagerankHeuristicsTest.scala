@@ -1,41 +1,27 @@
-import Util._
+package HeuristicsTests
+
+import Util.Util._
 import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-object DegreeHeuristicsPregelTest {
+object PagerankHeuristicsTest {
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
+    val annotated_graph = pagerankHeuristics(filtered_graph)
 
-    /*
-    val size = filtered_graph.vertices.collect().length
+    val size = annotated_graph.vertices.collect().length
     val r = scala.util.Random
 
     var errors = new mutable.HashMap[Int, ListBuffer[Int]]
     var interesting_nodes = List[(VertexId, (Double, List[VertexId]))]()
     var nr_interesting_nodes = 0
     var src_id = -1
-    var not_found_paths = 0
 
-    */
-    val core = spark.read.json(dataDir + "/core_degrees/core_degrees.json").toDF()
-    val core_ids = core.select("src").distinct().collect().toList.map(r => r.getLong(0).toInt)
-
-    val result = run_h_sssp_pregel_graph(filtered_graph,1,1,10,core_ids)
-    println("src = 1 and dst = 1", result)
-    val result2 = run_h_sssp_pregel_graph(filtered_graph,1,684,10,core_ids)
-    println("src = 1 and dst = 684", result2)
-    val result3 = run_h_sssp_pregel_graph(filtered_graph,1,6311,10,core_ids)
-    println("src = 1 and dst = 6311", result3)
-    val result4 = run_h_sssp_pregel_graph(filtered_graph,1,416126,10,core_ids)
-    println("src = 1 and dst = 416126", result4)
-    val result5 = run_h_sssp_pregel_graph(filtered_graph,1,28019,10,core_ids)
-    println("src = 1 and dst = 416126", result5)
-/*
     //Search for a node that has a reasonable connection
     do {
-      src_id = filtered_graph.vertices.collect()(math.abs(r.nextInt() % size))._1.toInt //random node
+      src_id = annotated_graph.vertices.collect()(math.abs(r.nextInt() % size))._1.toInt //random node
       val ground_truth = shortest_path_pregel(filtered_graph, src_id)
 
       interesting_nodes = ground_truth.filter(gt => gt._2._2.nonEmpty).map(v => (v._1, v._2)).toList
@@ -50,18 +36,22 @@ object DegreeHeuristicsPregelTest {
     interesting_node_groups.foreach(g => println(s"Length ${g._1}: ${g._2.length} Occurences"))
     println(s"Average Pathlength: ${total_pathlength.toDouble / nr_interesting_nodes}")
 
-    for (nr_neighbors <- 20 to 1 by -1) {
+    for (nr_neighbors <- 1 to 100) {
+      errors.clear()
+      var not_found_paths = 0
+      var runtimes = ListBuffer[Double]()
+
       pathlengths.foreach(pathlength => {
-        println(s"Sample of pathlength $pathlength")
+        println(s"Samples of pathlength $pathlength :")
         val group = interesting_node_groups(pathlength)
-        val sample = group.take(10)
-        not_found_paths = 0
-        for (i <- 0 until math.min(9, sample.length-1)) {
-          val inEdgesDst = filtered_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
-          println(s"Searching for path to id ${sample(i)._1} with nr InEdges ${inEdgesDst.length} (Optimal path: ${sample(i)._2._2.toString()})")
+        val sample = group.take(5)
+        for (i <- 0 until math.min(9, sample.length - 1)) {
+          val inEdgesDst = annotated_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
           val start = System.nanoTime()
-          val prediction = heuristic_sssp_pregel(filtered_graph, src_id, sample(i)._1.toInt, nr_neighbors, core_ids)
-          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + (System.nanoTime() - start) / 1000 / 1000 + "ms")
+          val prediction = heuristics_sssp(annotated_graph, src_id, sample(i)._1.toInt, nr_neighbors, dataDir + "/core_pagerank/core_pagerank.json")
+          val runtime = (System.nanoTime() - start) / 1000 / 1000
+          runtimes += runtime
+          println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + runtime + "ms")
           println(s"Heuristics Prediction: ${prediction.toString()}")
           if (prediction.isEmpty) {
             not_found_paths += 1
@@ -77,6 +67,7 @@ object DegreeHeuristicsPregelTest {
       })
 
       println("Neighborhood size: " + nr_neighbors)
+      println("Average runtime: " + (runtimes.sum.toLong / runtimes.length))
       println("Nr of not found paths: " + not_found_paths)
       var total_nr = 0
       var total_error = 0
@@ -94,6 +85,6 @@ object DegreeHeuristicsPregelTest {
         total_error += error
       })
       println(s"Average error for neighborhood size $nr_neighbors: ${total_error.toFloat / total_nr}")
-    }*/
+    }
   }
 }

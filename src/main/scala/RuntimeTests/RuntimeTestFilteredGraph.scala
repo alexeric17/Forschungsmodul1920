@@ -1,6 +1,8 @@
+package RuntimeTests
+
 import java.util.Calendar
 
-import Util._
+import Util.Util._
 
 object RuntimeTestFilteredGraph {
   val filtered_graph = get_filtered_graph()

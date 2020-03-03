@@ -1,6 +1,8 @@
+package RuntimeTests
+
 import java.util.Calendar
 
-import Util._
+import Util.Util._
 
 import scala.collection.mutable.ListBuffer
 

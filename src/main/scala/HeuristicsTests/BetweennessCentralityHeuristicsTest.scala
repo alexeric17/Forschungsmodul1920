@@ -1,13 +1,15 @@
-import Util._
+package HeuristicsTests
+
+import Util.Util._
 import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-object PagerankHeuristicsTest {
+object BetweennessCentralityHeuristicsTest {
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
-    val annotated_graph = pagerankHeuristics(filtered_graph)
+    val annotated_graph = betweennessCentralityHeuristics(filtered_graph)
 
     val size = annotated_graph.vertices.collect().length
     val r = scala.util.Random
@@ -46,7 +48,7 @@ object PagerankHeuristicsTest {
         for (i <- 0 until math.min(9, sample.length - 1)) {
           val inEdgesDst = annotated_graph.edges.collect().filter(e => e.dstId == sample(i)._1)
           val start = System.nanoTime()
-          val prediction = heuristics_sssp(annotated_graph, src_id, sample(i)._1.toInt, nr_neighbors, dataDir + "/core_pagerank/core_pagerank.json")
+          val prediction = heuristics_sssp(annotated_graph, src_id, sample(i)._1.toInt, nr_neighbors, dataDir + "/core_betweenness_centrality/core_betweenness_centrality.json")
           val runtime = (System.nanoTime() - start) / 1000 / 1000
           runtimes += runtime
           println("Heuristics Runtime (" + nr_neighbors + " neighbors): " + runtime + "ms")

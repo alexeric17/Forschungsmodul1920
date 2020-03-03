@@ -1,5 +1,7 @@
-import Util._
-import Util.spark.implicits._
+package CoreComputation
+
+import Util.Util._
+import Util.Util.spark.implicits._
 import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable.ListBuffer

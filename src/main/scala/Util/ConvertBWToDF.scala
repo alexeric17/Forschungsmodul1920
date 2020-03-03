@@ -1,3 +1,5 @@
+package Util
+
 import Util._
 import org.apache.spark.sql.functions._
 

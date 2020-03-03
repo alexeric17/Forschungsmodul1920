@@ -1,4 +1,6 @@
-import Util._
+package GraphPropertiesAnalysis
+
+import Util.Util._
 
 object ComputePageRanks {
   def main(args: Array[String]): Unit = {

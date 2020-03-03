@@ -1,7 +1,9 @@
+package CoreComputation
+
 import java.util.Calendar
 
-import Util._
-import Util.spark.implicits._
+import Util.Util._
+import Util.Util.spark.implicits._
 import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable.ListBuffer

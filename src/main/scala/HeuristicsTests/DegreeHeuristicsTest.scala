@@ -1,4 +1,6 @@
-import Util._
+package HeuristicsTests
+
+import Util.Util._
 import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable

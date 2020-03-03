@@ -1,4 +1,7 @@
-import Util._
+package GraphPropertiesAnalysis
+
+import Util.Util._
+import Util.Util.spark.implicits._
 import org.apache.spark.graphx.VertexId
 
 import scala.collection.mutable.ListBuffer
@@ -12,7 +15,7 @@ object BetweennessCentrality {
 
     //Get biggest connected components
     val bigConnectedComponent = subgraphs_from_connected_components(filtered_graph)(0)
-    val subGraph = create_subgraph_from_cc(filtered_graph,bigConnectedComponent)
+    val subGraph = create_subgraph_from_cc(filtered_graph, bigConnectedComponent)
     println("SubGraph done")
 
     //Get verticies.
@@ -25,8 +28,8 @@ object BetweennessCentrality {
     val randomNodesBuffer = ListBuffer[Int]()
     val r = scala.util.Random
     println("Collecting 1000 random nodes")
-    for(n <- 0 until 10000) {
-      val r_node_id= verticies(math.abs(r.nextInt() % size))._1.toInt
+    for (n <- 0 until 10000) {
+      val r_node_id = verticies(math.abs(r.nextInt() % size))._1.toInt
       randomNodesBuffer.append(r_node_id)
     }
     println("Nodes collected")
@@ -38,30 +41,28 @@ object BetweennessCentrality {
 
     //Run sssp on filtered full-graph but with nodes from the randomNodes (from subGraph).
     val path = FM1920HOME + "/data/betweenness_centrality/"
-    val result = collection.mutable.Map[VertexId,Int]()
-    
-    var i = 0
+    val result = collection.mutable.Map[VertexId, Int]()
 
-    import spark.implicits._
+    var i = 0
 
     println("Calculating betweenness centrality")
     //For all random nodes in subGraph.
-    for(next <- randomNodes){
+    for (next <- randomNodes) {
       //Make sure we keep only nodes from the connected component at each iteration.
-      println("Now looking at node: "+ next + "\n")
-      val sssp1 = most_seen_vertex_sssp_pregel(filtered_graph,next)
+      println("Now looking at node: " + next + "\n")
+      val sssp1 = most_seen_vertex_sssp_pregel(filtered_graph, next)
       //Update result.
-      sssp1.foreach(node => result.update(node._1,result.getOrElse(node._1,0) + node._2))
+      sssp1.foreach(node => result.update(node._1, result.getOrElse(node._1, 0) + node._2))
       println(s"Iteration $i\n")
-      if((i >= 50) && (i%50 == 0)) {
+      if ((i >= 50) && (i % 50 == 0)) {
 
-        val sortedResult = result.toSeq.toDF("id","times seen")
-        println(s"50 nodes at iteration: $i " ,sortedResult.take(50).mkString("\n"))
+        val sortedResult = result.toSeq.toDF("id", "times seen")
+        println(s"50 nodes at iteration: $i ", sortedResult.take(50).mkString("\n"))
         sortedResult.coalesce(1).write.json(dataDir + s"/betweenness_centrality/$i")
       }
       i += 1
     }
-    val finalResult = result.filter(x => subGraphVerticies.contains(x._1)).toSeq.toDF("id","times seen").coalesce(1).write.json(path+"final")
+    val finalResult = result.filter(x => subGraphVerticies.contains(x._1)).toSeq.toDF("id", "times seen").coalesce(1).write.json(path + "final")
 
     /*
     //TODO create a immutable map which can be sorted. BELOW.
