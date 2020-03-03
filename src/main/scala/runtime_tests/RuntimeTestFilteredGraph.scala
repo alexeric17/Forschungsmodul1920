@@ -1,4 +1,4 @@
-package RuntimeTests
+package runtime_tests
 
 import java.util.Calendar
 

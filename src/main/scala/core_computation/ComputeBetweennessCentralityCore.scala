@@ -1,4 +1,4 @@
-package CoreComputation
+package core_computation
 
 import org.apache.spark.graphx.VertexId
 import util.Subgraphs._

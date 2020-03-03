@@ -1,6 +1,6 @@
-package HeuristicsTests
+package heuristics
 
-import util.Heuristics._
+import Heuristics._
 import util.Util._
 
 object DegreeHeuristicsPregelTest {

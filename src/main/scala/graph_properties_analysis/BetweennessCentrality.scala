@@ -1,4 +1,4 @@
-package GraphPropertiesAnalysis
+package graph_properties_analysis
 
 import org.apache.spark.graphx.VertexId
 import util.Subgraphs._

@@ -1,4 +1,4 @@
-package util
+package heuristics
 
 import java.util.Calendar
 

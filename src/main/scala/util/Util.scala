@@ -194,7 +194,7 @@ object Util {
     newEdges
   }
 
-  def compute_filtered_graph() = {
+  def compute_filtered_graph(): Graph[String, Double] = {
     val nodesDF = spark.read.json(nodeFile)
     val edgesDF = spark.read.json(edgeFile)
     val nodes = filter_from_nodes_using_list(nodesDF).mapPartitions(vertices => {

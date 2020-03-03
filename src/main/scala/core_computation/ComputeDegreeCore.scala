@@ -1,4 +1,4 @@
-package CoreComputation
+package core_computation
 
 import java.util.Calendar
 

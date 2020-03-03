@@ -1,4 +1,4 @@
-package GraphPropertiesAnalysis
+package graph_properties_analysis
 
 import util.Subgraphs._
 import util.Util._
