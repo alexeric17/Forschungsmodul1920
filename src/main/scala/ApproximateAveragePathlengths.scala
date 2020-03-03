@@ -16,24 +16,16 @@ object ApproximateAveragePathlengths {
     val subGraph = create_subgraph_from_cc(filtered_graph,bigConnectedComponent)
     println("SubGraph done")
 
-    //Get verticies.
-    val verticies = subGraph.vertices.collect()
-    val subGraphVerticies = verticies.map(x => x._1.toInt).toList
-    val size = verticies.length
-    println("Number of verticies in subGraph ", size)
+    //Get random sample
+    val randomNodes = subGraph
+      .vertices
+      .takeSample(false, 1000, scala.util.Random.nextLong())
+      .map(v => v._1)
+      .toList
 
-    //Collect 1000 random nodes from subGraph.
-    val randomNodesBuffer = ListBuffer[VertexId]()
-    val r = scala.util.Random
-    println("Collecting 1000 random nodes")
-    for(n <- 0 until 1000) {
-      val r_node_id= verticies(math.abs(r.nextInt() % size))._1.toInt
-      randomNodesBuffer.append(r_node_id)
-    }
     println("Nodes collected")
 
     //1000 random nodes from biggest subGraph.
-    val randomNodes = randomNodesBuffer.toList
     println("Number of random nodes in list: ", randomNodes.length)
 
 
