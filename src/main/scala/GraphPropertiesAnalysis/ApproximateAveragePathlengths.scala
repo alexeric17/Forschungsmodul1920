@@ -31,16 +31,23 @@ object ApproximateAveragePathlengths {
     //Run sssp on filtered full-graph but with nodes from the randomNodes (from subGraph).
     val result = collection.mutable.Map[Int, Int]()
 
-    val annotated_nodes = ShortestPaths.run(filtered_graph, randomNodes).vertices.collect()
+    var i = 1
+    for (sample <- randomNodes.grouped(10)) {
+      println(s"Looking at sample $i of 100")
+      i += 1
 
-    for (v <- annotated_nodes) {
-      for (value <- v._2)
-        if (!result.contains(value._2)) {
-          result(value._2) = 1
-        } else {
-          result(value._2) += 1
-        }
+      val annotated = ShortestPaths.run(filtered_graph, sample)
+
+      for (v <- annotated.vertices.collect()) {
+        for (value <- v._2)
+          if (!result.contains(value._2)) {
+            result(value._2) = 1
+          } else {
+            result(value._2) += 1
+          }
+      }
     }
+
 
     for (key <- result.keys) {
       println(s"Pathlength $key: ${result(key)}")
