@@ -1,6 +1,7 @@
 package HeuristicsTests
 
-import Util.Util._
+import util.Heuristics._
+import util.Util._
 
 object DegreeHeuristicsPregelTest {
   def main(args: Array[String]): Unit = {

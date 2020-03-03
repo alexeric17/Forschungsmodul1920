@@ -1,7 +1,7 @@
-package Util
+package util
 
-import Util._
 import org.apache.spark.sql.functions._
+import util.Util._
 
 object degreeDF {
 

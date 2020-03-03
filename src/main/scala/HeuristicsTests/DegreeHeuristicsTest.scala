@@ -1,7 +1,8 @@
 package HeuristicsTests
 
-import Util.Util._
 import org.apache.spark.graphx.VertexId
+import util.Heuristics._
+import util.Util._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

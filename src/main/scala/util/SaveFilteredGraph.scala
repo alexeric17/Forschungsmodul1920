@@ -1,6 +1,6 @@
-package Util
+package util
 
-import Util._
+import util.Util._
 
 object SaveFilteredGraph {
   def main(args: Array[String]): Unit = {

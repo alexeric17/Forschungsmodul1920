@@ -2,7 +2,8 @@ package RuntimeTests
 
 import java.util.Calendar
 
-import Util.Util._
+import util.Subgraphs._
+import util.Util._
 
 import scala.collection.mutable
 

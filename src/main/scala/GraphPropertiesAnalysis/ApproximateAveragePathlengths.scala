@@ -1,7 +1,8 @@
 package GraphPropertiesAnalysis
 
-import Util.Util._
 import org.apache.spark.graphx.lib.ShortestPaths
+import util.Subgraphs._
+import util.Util._
 
 object ApproximateAveragePathlengths {
   def main(args: Array[String]): Unit = {

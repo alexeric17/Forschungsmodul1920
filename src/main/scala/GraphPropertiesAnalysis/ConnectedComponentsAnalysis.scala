@@ -1,6 +1,7 @@
 package GraphPropertiesAnalysis
 
-import Util.Util._
+import util.Subgraphs._
+import util.Util._
 
 object ConnectedComponentsAnalysis {
   val filtered_graph = get_filtered_graph()
