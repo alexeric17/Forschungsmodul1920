@@ -10,6 +10,8 @@ import util.Util.spark.implicits._
 import scala.collection.mutable.ListBuffer
 
 object ComputeDegreeCore {
+  val MAX_CORE_SIZE = 5000 //Adapt for different core sizes
+
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
     var result = ListBuffer[(VertexId, VertexId, List[VertexId])]()
@@ -28,7 +30,7 @@ object ComputeDegreeCore {
     val core_nodes = g_degOut
       .filter(v => biggest_component.contains(v._1))
       .filter(v => g_degIn(v._1) > 0)
-      .sortBy(v => -v._2).take(1000)
+      .sortBy(v => -v._2).take(MAX_CORE_SIZE)
 
     println(s"Computing the core on graph of size ${filtered_graph.vertices.collect().length} for the following vertices:")
     core_nodes.foreach(v => println(s"ID ${v._1} with degree ${v._2})"))
@@ -46,7 +48,7 @@ object ComputeDegreeCore {
         .foreach(v => result.append((v._2._2.head, v._2._2.last, v._2._2)))
 
       if (iteration == 100 || (iteration > 100 && iteration % 10 == 0)) {
-        println(s"Percentage of found paths between core after $iteration iterations: ${result.length.toDouble / 10000}")
+        println(s"Percentage of found paths between core after $iteration iterations: ${result.length.toDouble / (iteration*iteration)}")
         result.filter(t => core_node_ids.take(iteration).contains(t._1) && core_node_ids.take(iteration).contains(t._2))
           .toDF("src", "dst", "path").coalesce(1).write.json(dataDir + s"/core_degrees/$iteration")
       }

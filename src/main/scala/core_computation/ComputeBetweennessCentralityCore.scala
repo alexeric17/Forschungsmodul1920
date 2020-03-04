@@ -8,6 +8,8 @@ import util.Util.spark.implicits._
 import scala.collection.mutable.ListBuffer
 
 object ComputeBetweennessCentralityCore {
+  val MAX_CORE_SIZE = 5000 //Adapt for different core sizes
+
   def main(args: Array[String]): Unit = {
     val filtered_graph = get_filtered_graph()
     var result = ListBuffer[(VertexId, VertexId, List[VertexId])]()
@@ -22,7 +24,7 @@ object ComputeBetweennessCentralityCore {
       .collect()
       .filter(v => biggest_component.contains(v._1))
       .sortBy(v => -v._2)
-      .take(5000)
+      .take(MAX_CORE_SIZE)
 
     val core_node_ids = core_nodes.map(n => n._1)
 
@@ -37,7 +39,7 @@ object ComputeBetweennessCentralityCore {
         .foreach(v => result.append((v._2._2.head, v._2._2.last, v._2._2)))
 
       if (iteration == 100 || (iteration > 100 && iteration % 10 == 0)) {
-        println(s"Percentage of found paths between core after $iteration iterations: ${result.length.toDouble / 10000}")
+        println(s"Percentage of found paths between core after $iteration iterations: ${result.length.toDouble / (iteration*iteration)}")
         result
           .filter(t => core_node_ids.take(iteration).contains(t._1) && core_node_ids.take(iteration).contains(t._2))
           .toDF("src", "dst", "path")
